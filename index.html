@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유튜브 스크립트 & B-Roll</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <h1>유튜브 스크립트 & B-Roll</h1>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="openLandingHelp()" title="도움말" style="font-size:15px;">?</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="다크/라이트 모드 전환">
+      <span id="themeIcon">&#9788;</span>
+    </button>
+  </div>
+</div>
+
+<div class="landing">
+  <div class="landing-cards">
+    <!-- Writing mode card -->
+    <div class="landing-card" id="writingCard" onclick="goToWriting()">
+      <h2>원고 작성</h2>
+      <p>벤치마킹 원고를 참고하면서<br>내 스타일로 대본을 작성합니다.</p>
+      <div class="drop-hint" id="writingDrop">
+        <strong>파일을 여기에 드롭</strong><br>
+        .txt (타임스탬프 자막) / .md
+      </div>
+      <div class="file-input-wrap">
+        <button class="btn btn-secondary">파일 선택</button>
+        <input type="file" accept=".txt,.md" onchange="handleWritingFile(this.files[0])">
+      </div>
+    </div>
+
+    <!-- B-roll mode card -->
+    <div class="landing-card" id="brollCard" onclick="goToBroll()">
+      <h2>B-Roll 모드</h2>
+      <p>완성된 대본에 B-roll 메모와<br>촬영 태그를 추가합니다.</p>
+      <div class="drop-hint" id="brollDrop">
+        <strong>파일을 여기에 드롭</strong><br>
+        .md (대본) / .html (이어 편집)
+      </div>
+      <div class="file-input-wrap">
+        <button class="btn btn-secondary">파일 선택</button>
+        <input type="file" accept=".md,.html,.htm" onchange="handleBrollFile(this.files[0])">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="width:520px;">
+    <h3>도움말</h3>
+    <div class="help-content">
+      <h4>워크플로우</h4>
+      <p><strong>1단계 — 원고 작성:</strong> 벤치마킹 영상의 자막/대본을 참고하면서 내 스타일로 원고를 작성합니다.</p>
+      <p><strong>2단계 — B-Roll 모드:</strong> 완성된 원고에 촬영할 B-roll을 섹션별로 태그하고 메모합니다.</p>
+      <p>원고 작성이 끝나면 "B-roll 모드로 이동" 버튼으로 바로 넘어갈 수 있습니다.</p>
+
+      <h4>파일 형식</h4>
+      <ul>
+        <li><strong>.txt</strong> — 타임스탬프+자막 형식 (벤치마킹용). 예: <kbd>00:00 안녕하세요</kbd></li>
+        <li><strong>.md</strong> — 마크다운 대본. <kbd># 제목</kbd>, <kbd>## 소제목</kbd>, <kbd>### 하위</kbd></li>
+        <li><strong>.html</strong> — 이전에 내보낸 파일 (이어 편집)</li>
+      </ul>
+
+      <h4>단축키</h4>
+      <ul>
+        <li><kbd>Ctrl+S</kbd> 임시저장 | <kbd>Ctrl+Z</kbd> 되돌리기 | <kbd>Ctrl+E</kbd> 내보내기</li>
+        <li><kbd>Ctrl+P</kbd> 대본 모드 (텔레프롬프터) | <kbd>Esc</kbd> 닫기</li>
+      </ul>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('helpModal').classList.remove('show')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Theme (standalone for landing page)
+  function getTheme() { return localStorage.getItem('broll-theme') || 'dark'; }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeIcon').innerHTML = theme === 'dark' ? '&#9788;' : '&#9790;';
+    localStorage.setItem('broll-theme', theme);
+  }
+  function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+  applyTheme(getTheme());
+
+  function openLandingHelp() { document.getElementById('helpModal').classList.add('show'); }
+
+  // File transfer via localStorage
+  function storePendingFile(name, content) {
+    localStorage.setItem('pending-file', JSON.stringify({ name, content }));
+  }
+
+  // Navigation
+  function goToWriting() { window.location.href = 'writing.html'; }
+  function goToBroll() { window.location.href = 'broll.html'; }
+
+  // File handling
+  function handleWritingFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      storePendingFile(file.name, e.target.result);
+      window.location.href = 'writing.html';
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  function handleBrollFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      storePendingFile(file.name, e.target.result);
+      window.location.href = 'broll.html';
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  // Drag & drop on cards
+  function setupCardDrop(cardEl, handler) {
+    cardEl.addEventListener('dragover', (e) => { e.preventDefault(); cardEl.classList.add('dragover'); });
+    cardEl.addEventListener('dragleave', () => cardEl.classList.remove('dragover'));
+    cardEl.addEventListener('drop', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      cardEl.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handler(e.dataTransfer.files[0]);
+    });
+    // Prevent card click when using file input
+    cardEl.querySelector('input[type="file"]')?.addEventListener('click', (e) => e.stopPropagation());
+    cardEl.querySelector('.file-input-wrap button')?.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  setupCardDrop(document.getElementById('writingCard'), handleWritingFile);
+  setupCardDrop(document.getElementById('brollCard'), handleBrollFile);
+
+  // Also support generic drop on body — auto-detect by extension
+  document.body.addEventListener('dragover', (e) => e.preventDefault());
+  document.body.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (file.name.endsWith('.txt')) handleWritingFile(file);
+    else handleBrollFile(file);
+  });
+
+  // Check for autosave data and show recovery hint
+  const brollSave = localStorage.getItem('broll-autosave');
+  const writingSave = localStorage.getItem('writing-autosave');
+  if (brollSave || writingSave) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'text-align:center;margin-top:24px;font-size:12px;color:var(--text-muted);';
+    let msg = '';
+    if (brollSave) {
+      try {
+        const d = JSON.parse(brollSave);
+        msg += `<a href="broll.html" style="color:var(--accent);">B-roll 미저장 작업 복구: "${d.videoTitle}"</a>`;
+      } catch(e) {}
+    }
+    if (writingSave) {
+      try {
+        const d = JSON.parse(writingSave);
+        if (msg) msg += ' &nbsp;|&nbsp; ';
+        msg += `<a href="writing.html" style="color:var(--accent);">원고 미저장 작업 복구: "${d.videoTitle || '작업중'}"</a>`;
+      } catch(e) {}
+    }
+    if (msg) {
+      hint.innerHTML = msg;
+      document.querySelector('.landing').appendChild(hint);
+    }
+  }
+
+  // Escape to close help
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.getElementById('helpModal').classList.remove('show');
+  });
+</script>
+</body>
+</html>
