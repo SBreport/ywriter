@@ -293,9 +293,23 @@
       if (!f.type.startsWith('image/')) continue;
       if (refs.length >= MAX_REFS) break;
       const imageId = await ProjectsDB.saveImage(p.id, f, 'ref', f.name);
-      refs.push({ id: ProjectsDB.uuid(), imageId, sourceTitle: '', url: '', memo: '' });
+      refs.push(_makeRef({ imageId }));
     }
     save(); renderRefGrid();
+  }
+
+  function _makeRef(partial) {
+    return Object.assign({
+      id: ProjectsDB.uuid(),
+      imageId: null,
+      sourceTitle: '',
+      url: '',
+      memo: '',
+      warehouseMemo: '',
+      tags: [],
+      favorite: false,
+      collectedAt: ProjectsDB.nowISO()
+    }, partial || {});
   }
 
   // ── Paste handler (only active when on chapter 1) ──
@@ -325,10 +339,7 @@
     for (const blob of images) {
       if (p.thumbResearch.references.length >= MAX_REFS) break;
       const imageId = await ProjectsDB.saveImage(p.id, blob, 'ref', 'pasted.png');
-      p.thumbResearch.references.push({
-        id: ProjectsDB.uuid(), imageId,
-        sourceTitle: '', url: inferredUrl, memo: ''
-      });
+      p.thumbResearch.references.push(_makeRef({ imageId, url: inferredUrl }));
     }
     save(); renderRefGrid();
   }
@@ -348,13 +359,7 @@
 
     const videoId = YouTubeAPI.extractVideoId(url);
     // Create new ref (works for both YouTube and non-YouTube URLs)
-    const ref = {
-      id: ProjectsDB.uuid(),
-      imageId: null,
-      sourceTitle: '',
-      url: url,
-      memo: ''
-    };
+    const ref = _makeRef({ url });
     p.thumbResearch.references.push(ref);
     input.value = '';
     save();

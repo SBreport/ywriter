@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>썸네일 창고 — ywriter</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="index.html" class="btn-icon" title="홈으로">&larr;</a>
+    <h1>📦 썸네일 창고</h1>
+    <span id="whCount" style="color:var(--text-muted);font-size:12px;font-weight:500;"></span>
+  </div>
+  <div class="header-actions">
+    <button class="theme-toggle" id="themeToggle" title="테마 전환">
+      <span id="themeIcon">&#9788;</span>
+    </button>
+  </div>
+</div>
+
+<div class="wh-layout">
+  <!-- Filter bar -->
+  <div class="wh-filters">
+    <input type="text" id="whSearch" placeholder="🔍 제목/채널/메모/프로젝트 검색..." class="wh-search">
+    <select id="whFilterProject" class="wh-select" title="프로젝트 필터">
+      <option value="all">모든 프로젝트</option>
+    </select>
+    <select id="whFilterTag" class="wh-select" title="태그 필터">
+      <option value="all">모든 태그</option>
+    </select>
+    <button class="wh-fav-filter" id="whFavOnly" title="즐겨찾기만 보기">★ 즐겨찾기</button>
+    <select id="whSort" class="wh-select" title="정렬">
+      <option value="collectedDesc">수집일 최신순</option>
+      <option value="collectedAsc">수집일 오래된순</option>
+      <option value="channelAsc">채널명순</option>
+      <option value="projectAsc">프로젝트순</option>
+    </select>
+  </div>
+
+  <!-- Grid -->
+  <div id="whGrid" class="wh-grid"></div>
+
+  <div id="whEmpty" class="empty-state" style="display:none;">
+    <p>썸네일 창고가 비어있습니다.</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+      프로젝트 → 챕터 1에서 벤치마킹 썸네일을 추가하면<br>
+      이곳에 자동으로 모입니다.
+    </p>
+  </div>
+</div>
+
+<script>
+  function getTheme() { return localStorage.getItem('broll-theme') || 'dark'; }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.innerHTML = theme === 'dark' ? '&#9788;' : '&#9790;';
+    localStorage.setItem('broll-theme', theme);
+  }
+  function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+  applyTheme(getTheme());
+  document.getElementById('themeToggle').onclick = toggleTheme;
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+</script>
+<script src="js/projects-db.js"></script>
+<script src="js/youtube-api.js"></script>
+<script src="js/warehouse.js"></script>
+</body>
+</html>
