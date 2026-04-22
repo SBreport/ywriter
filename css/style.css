@@ -815,6 +815,27 @@ body {
 /* Chapter 1에서는 콘텐츠 최대폭을 넓게 써서 썸네일을 더 크게 */
 #chapter1 .chapter-body { max-width: 1400px; }
 
+/* Quick add: YouTube URL input */
+.ref-quick-add {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; margin-bottom: 16px;
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
+  transition: border-color 0.15s;
+}
+.ref-quick-add:focus-within {
+  border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.ref-quick-add-icon {
+  font-size: 14px; color: var(--text-muted); padding: 0 4px;
+}
+.ref-quick-add input {
+  flex: 1; padding: 8px 10px; font-size: 13px;
+  background: transparent; border: none; color: var(--text);
+  font-family: inherit; outline: none;
+}
+.ref-quick-add input::placeholder { color: var(--text-muted); }
+.ref-quick-add .btn { flex-shrink: 0; padding: 8px 18px; font-size: 13px; }
+
 .ref-grid {
   display: grid;
   /* 카드 최소 너비 280px → 화면 크기에 따라 자동 2x2 / 3x3 / 4x4 */

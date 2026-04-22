@@ -334,6 +334,54 @@
   }
   document.addEventListener('paste', handlePaste);
 
+  // ── Quick Add (YouTube URL) ──
+  async function quickAddUrl() {
+    const input = document.getElementById('refQuickUrl');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) return;
+    const p = project();
+    if (p.thumbResearch.references.length >= MAX_REFS) {
+      alert(`썸네일은 최대 ${MAX_REFS}개까지 가능합니다.`);
+      return;
+    }
+
+    const videoId = YouTubeAPI.extractVideoId(url);
+    // Create new ref (works for both YouTube and non-YouTube URLs)
+    const ref = {
+      id: ProjectsDB.uuid(),
+      imageId: null,
+      sourceTitle: '',
+      url: url,
+      memo: ''
+    };
+    p.thumbResearch.references.push(ref);
+    input.value = '';
+    save();
+    await renderRefGrid();
+
+    // If it's a YouTube URL, auto-fetch metadata
+    if (videoId) {
+      // Find the newly rendered card
+      const cards = document.querySelectorAll('.ref-card:not(.ref-add-card)');
+      const lastCard = cards[cards.length - 1];
+      if (lastCard) {
+        await _tryFetchYouTubeMeta(ref, lastCard);
+      }
+    } else if (url) {
+      _showToast('YouTube URL이 아니므로 이미지는 직접 추가하세요.', 'info');
+    }
+  }
+
+  const quickUrlInput = document.getElementById('refQuickUrl');
+  const quickAddBtn = document.getElementById('refQuickAddBtn');
+  if (quickUrlInput) {
+    quickUrlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); quickAddUrl(); }
+    });
+  }
+  if (quickAddBtn) quickAddBtn.onclick = quickAddUrl;
+
   // ── Input bindings ──
   document.getElementById('myVideoTitle').oninput = (e) => {
     project().thumbResearch.myVideoTitle = e.target.value;
