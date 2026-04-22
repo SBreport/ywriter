@@ -1128,6 +1128,11 @@ body {
   color: #fff;
 }
 .wh-folder.drag-over .wh-folder-count { color: #fff; }
+.wh-folder.dragging {
+  opacity: 0.4;
+}
+.wh-folder[draggable="true"] { cursor: grab; }
+.wh-folder[draggable="true"]:active { cursor: grabbing; }
 
 .wh-folder-child { padding-left: 30px; font-size: 11.5px; }
 .wh-folder-child::before {

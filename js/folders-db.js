@@ -77,6 +77,40 @@
     }
   }
 
+  // Move folder to a new parent (null = promote to top-level)
+  // Returns { ok: true } or { ok: false, reason: 'DEPTH' | 'SELF' | 'SAME' | 'NO_FOLDER' }
+  function moveFolder(folderId, newParentId) {
+    const folders = load();
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return { ok: false, reason: 'NO_FOLDER' };
+    if (folderId === newParentId) return { ok: false, reason: 'SELF' };
+
+    // If newParent is a child folder, use its parent instead (so drop-on-child = become sibling)
+    if (newParentId) {
+      const target = folders.find(f => f.id === newParentId);
+      if (!target) return { ok: false, reason: 'NO_FOLDER' };
+      if (target.parentId) newParentId = target.parentId; // drop on child → become sibling
+    }
+
+    // No change
+    if ((folder.parentId || null) === (newParentId || null)) return { ok: false, reason: 'SAME' };
+
+    // Depth check: if folder has children, it can't become a child (would create depth 3)
+    const hasChildren = folders.some(f => f.parentId === folderId);
+    if (hasChildren && newParentId) return { ok: false, reason: 'DEPTH' };
+
+    // Prevent cycle (folder becoming child of its own descendant)
+    // With only 2 levels it's limited: folder becoming child of its direct child
+    if (newParentId) {
+      const targetIsChildOfSource = folders.some(f => f.id === newParentId && f.parentId === folderId);
+      if (targetIsChildOfSource) return { ok: false, reason: 'DEPTH' };
+    }
+
+    folder.parentId = newParentId || null;
+    save(folders);
+    return { ok: true };
+  }
+
   function assignRefToFolder(projectId, refId, folderId) {
     const p = ProjectsDB.load(projectId);
     if (!p) return;
@@ -106,7 +140,7 @@
   }
 
   window.FoldersDB = {
-    list, get, create, rename, remove,
+    list, get, create, rename, remove, moveFolder,
     assignRefToFolder, getFolderAndDescendants, tree
   };
 })();

@@ -161,15 +161,32 @@
     // Event wiring
     treeEl.querySelectorAll('.wh-folder').forEach(el => {
       const id = el.dataset.fid;
+      const isSystem = id === 'all' || id === 'unassigned';
+
       el.addEventListener('click', (e) => {
         if (e.target.closest('.wh-folder-action')) return; // ignore action btn click
         state.filter.folderId = id;
         render();
       });
+
+      // Make folders (non-system) draggable themselves
+      if (!isSystem) {
+        el.draggable = true;
+        el.addEventListener('dragstart', (ev) => {
+          ev.dataTransfer.effectAllowed = 'move';
+          ev.dataTransfer.setData('text/plain', JSON.stringify({
+            type: 'folder', folderId: id
+          }));
+          el.classList.add('dragging');
+          // Small delay so dataTransfer commits before dragover fires
+        });
+        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+      }
+
       // Drop target
       el.addEventListener('dragover', (e) => {
-        if (id === 'all') return;
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
         el.classList.add('drag-over');
       });
       el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
@@ -180,12 +197,16 @@
         if (!data) return;
         let parsed;
         try { parsed = JSON.parse(data); } catch { return; }
-        if (parsed.type !== 'ref') return;
-        // 'all' = un-drop (not valid). 'unassigned' = set null
-        const targetFolderId = id === 'all' ? null : (id === 'unassigned' ? null : id);
-        if (id === 'all') return;
-        FoldersDB.assignRefToFolder(parsed.projectId, parsed.refId, targetFolderId);
-        render();
+
+        if (parsed.type === 'ref') {
+          // 'all' = not a valid drop target for refs
+          if (id === 'all') return;
+          const targetFolderId = id === 'unassigned' ? null : id;
+          FoldersDB.assignRefToFolder(parsed.projectId, parsed.refId, targetFolderId);
+          render();
+        } else if (parsed.type === 'folder') {
+          _handleFolderDrop(parsed.folderId, id);
+        }
       });
     });
 
@@ -223,6 +244,32 @@
         }
       };
     });
+  }
+
+  function _handleFolderDrop(sourceFolderId, targetId) {
+    if (sourceFolderId === targetId) return;
+    // Determine new parent:
+    // - drop on 'all' or 'unassigned' → promote to top-level (parentId = null)
+    // - drop on folder → become child of that folder (or sibling if target is a child, handled in moveFolder)
+    let newParentId;
+    if (targetId === 'all' || targetId === 'unassigned') {
+      newParentId = null;
+    } else {
+      newParentId = targetId;
+    }
+
+    const result = FoldersDB.moveFolder(sourceFolderId, newParentId);
+    if (!result.ok) {
+      if (result.reason === 'DEPTH') {
+        alert('하위 폴더를 가진 폴더는 다른 폴더 안으로 이동할 수 없습니다.\n(폴더는 최대 2단계까지만 가능합니다)');
+      } else if (result.reason === 'SELF') {
+        // silent
+      } else if (result.reason === 'SAME') {
+        // silent
+      }
+      return;
+    }
+    render();
   }
 
   function _folderRowHtml(f, activeId) {
