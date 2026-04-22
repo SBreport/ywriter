@@ -54,9 +54,11 @@
       const safeUrl = _safeUrl(ref.url);
 
       // Meta row (channel · date · duration)
+      // Re-format date from ISO every render to reflect latest format setting
+      const dateLabel = ref.uploadedAt ? YouTubeAPI.formatUploadDate(ref.uploadedAt) : (ref.uploadedAtLabel || '');
       const metaParts = [];
       if (ref.channelName) metaParts.push(escapeHtml(ref.channelName));
-      if (ref.uploadedAtLabel) metaParts.push(escapeHtml(ref.uploadedAtLabel));
+      if (dateLabel) metaParts.push(escapeHtml(dateLabel));
       if (ref.duration) metaParts.push(escapeHtml(ref.duration));
       const metaHtml = metaParts.length
         ? `<div class="ref-meta">${metaParts.join(' · ')}</div>`

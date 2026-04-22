@@ -61,18 +61,12 @@
     return `${mm}:${String(ss).padStart(2, '0')}`;
   }
 
-  // ── Date format: 2024-01-15T10:30:00Z → "2024년 1월 15일" or "3일 전" ──
+  // ── Date format: 2024-01-15T10:30:00Z → "2024.1.15" ──
   function formatUploadDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays < 1) return '오늘';
-    if (diffDays < 7) return `${diffDays}일 전`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전`;
-    return `${Math.floor(diffDays / 365)}년 전`;
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   }
 
   // ── API 조회 ──
