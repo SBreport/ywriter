@@ -638,3 +638,317 @@ body {
 .my-script-panel {
   flex: 1; display: flex; flex-direction: column; min-width: 0;
 }
+
+/* ─────────────────────────────────────────────────
+   v3: Home, Project Shell, Chapters
+   ───────────────────────────────────────────────── */
+
+/* ── Home ── */
+.home-layout {
+  max-width: 960px; margin: 0 auto; padding: 32px 24px;
+}
+.home-actions {
+  display: flex; gap: 8px; margin-bottom: 32px;
+}
+.home-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.home-section-header h2 {
+  font-size: 15px; font-weight: 700; color: var(--text-strong);
+}
+.project-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.project-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; transition: all 0.15s;
+}
+.project-card:hover { border-color: var(--border-strong); }
+.project-card-main {
+  flex: 1; cursor: pointer;
+}
+.project-card-title {
+  font-size: 15px; font-weight: 600; color: var(--text-strong);
+  margin-bottom: 4px;
+}
+.project-card-meta {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-muted);
+}
+.chapter-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--tag-inactive-bg); border: 1px solid var(--border);
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+}
+.chapter-dot.done {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.project-card-time { margin-left: 8px; }
+.project-card-actions { display: flex; gap: 2px; }
+
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  background: var(--surface); border: 1px dashed var(--border);
+  border-radius: 10px; color: var(--text);
+}
+.empty-state p:first-child { font-size: 15px; font-weight: 600; color: var(--text-muted); }
+
+.migration-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px 24px;
+  background: var(--accent-subtle); border-bottom: 1px solid var(--accent);
+  font-size: 13px; color: var(--text);
+}
+
+/* ── Project Shell ── */
+.project-name-input {
+  padding: 6px 10px; font-size: 14px; font-weight: 600;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: var(--text-strong); font-family: inherit;
+  min-width: 280px; transition: all 0.15s;
+}
+.project-name-input:hover { border-color: var(--border); }
+.project-name-input:focus {
+  outline: none; background: var(--input-bg); border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+/* ── Context bar (sticky) ── */
+.context-bar {
+  position: sticky; top: 48px; z-index: 50;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 24px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.context-item {
+  display: flex; align-items: baseline; gap: 6px;
+  max-width: 28%; overflow: hidden;
+}
+.context-label {
+  color: var(--text-muted); font-weight: 600; font-size: 11px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.context-value {
+  color: var(--text); font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.context-edit-btn {
+  margin-left: auto; padding: 4px 10px; font-size: 11px; font-weight: 600;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.context-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── Chapter tabs ── */
+.chapter-tabs {
+  position: sticky; top: 48px; z-index: 49;
+  display: flex; gap: 0; padding: 0 24px;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.chapter-panel:has(+ .context-bar) ~ .chapter-tabs,
+.context-bar + .chapter-tabs { top: 86px; }
+
+.chapter-tab {
+  padding: 12px 20px; font-size: 13px; font-weight: 600;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.chapter-tab:hover:not(.locked) { color: var(--text); }
+.chapter-tab.active {
+  color: var(--accent); border-bottom-color: var(--accent);
+}
+.chapter-tab.locked { opacity: 0.5; cursor: not-allowed; }
+.chapter-tab.completed .chapter-tab-status { color: var(--accent); }
+.chapter-tab-status { font-size: 10px; opacity: 0.7; }
+
+/* ── Chapter panels ── */
+.chapter-panel { min-height: calc(100vh - 140px); }
+.chapter-body {
+  max-width: 900px; margin: 0 auto; padding: 24px;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  background: var(--surface); position: sticky; bottom: 0;
+}
+
+/* ── Chapter 1 ── */
+.c1-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px 24px; margin-bottom: 16px;
+}
+.c1-section h2 {
+  font-size: 15px; font-weight: 700; color: var(--text-strong);
+  margin-bottom: 6px;
+}
+.c1-section .section-desc {
+  font-size: 12px; color: var(--text-muted); margin-bottom: 14px;
+}
+.c1-hint { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.c1-grid {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+}
+.c1-field { display: flex; flex-direction: column; gap: 6px; }
+.c1-field label {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+}
+.c1-field input {
+  padding: 9px 12px; font-size: 14px; font-family: inherit;
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); transition: border-color 0.15s;
+}
+.c1-field input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.c1-essence {
+  border-left: 3px solid var(--accent);
+}
+.c1-essence .c1-field { margin-bottom: 10px; }
+
+/* ── Ref grid (썸네일 수집) ── */
+.ref-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.ref-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px; background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 8px; position: relative;
+}
+.ref-image {
+  width: 100%; aspect-ratio: 16/9; background: var(--bg);
+  border-radius: 6px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.ref-image img { width: 100%; height: 100%; object-fit: cover; }
+.ref-placeholder { color: var(--text-muted); font-size: 11px; }
+.ref-title {
+  padding: 4px 8px; font-size: 12px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 4px; color: var(--text);
+  font-family: inherit;
+}
+.ref-memo {
+  padding: 6px 8px; font-size: 11px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 4px; color: var(--text);
+  font-family: inherit; line-height: 1.5; resize: vertical; min-height: 40px;
+}
+.ref-delete {
+  position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
+  background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 4px;
+  cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+}
+.ref-card:hover .ref-delete { opacity: 1; }
+
+.ref-add-card {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 200px; cursor: pointer; border: 2px dashed var(--border);
+  background: transparent; transition: all 0.15s;
+}
+.ref-add-card:hover, .ref-add-card.dragover {
+  border-color: var(--accent); background: var(--accent-subtle);
+}
+.ref-add-content {
+  text-align: center; color: var(--text-muted);
+}
+.ref-add-icon {
+  font-size: 32px; font-weight: 300; color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.ref-add-text strong {
+  display: block; font-size: 13px; color: var(--text); margin-bottom: 4px;
+}
+.ref-add-text div { font-size: 11px; }
+.ref-add-card input { display: none; }
+.ref-limit {
+  grid-column: 1 / -1; text-align: center; padding: 20px;
+  color: var(--text-muted); font-size: 12px;
+}
+
+/* My thumbnail preview */
+.my-thumb-preview {
+  position: relative; display: inline-block; max-width: 300px;
+  border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
+}
+.my-thumb-preview img { display: block; width: 100%; }
+.my-thumb-remove {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
+  background: rgba(0,0,0,0.7); color: #fff; border: none; border-radius: 4px;
+  cursor: pointer; font-size: 14px;
+}
+.my-thumb-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 300px; height: 120px;
+  background: var(--input-bg); border: 2px dashed var(--border); border-radius: 8px;
+  cursor: pointer; color: var(--text-muted); transition: all 0.15s;
+}
+.my-thumb-drop:hover, .my-thumb-drop.dragover {
+  border-color: var(--accent); color: var(--text); background: var(--accent-subtle);
+}
+
+/* ── Chapter 2 layout ── */
+.c2-layout, .c3-layout {
+  display: flex; min-height: calc(100vh - 200px);
+}
+.c2-layout .toc-sidebar, .c3-layout .toc-sidebar {
+  width: 180px; min-width: 180px; position: sticky;
+  top: 140px; height: calc(100vh - 200px); overflow-y: auto;
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 12px 0; display: flex; flex-direction: column;
+}
+.c2-layout .toc-sidebar #c2TocList,
+.c3-layout .toc-sidebar #c3TocList { flex: 1; overflow-y: auto; }
+.toc-footer {
+  padding: 8px 12px; border-top: 1px solid var(--border); margin-top: auto;
+}
+.c2-layout .bench-panel {
+  flex: 1; border-right: 1px solid var(--border); min-width: 0;
+  display: flex; flex-direction: column;
+}
+.c2-layout .my-script-panel { flex: 1; min-width: 0; overflow-y: auto; }
+
+/* Hook banner */
+.hook-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 10px 24px; background: var(--accent-subtle);
+  border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+  font-size: 12px; color: var(--text);
+}
+
+/* Hook section emphasis */
+.section-block.hook-section {
+  border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-subtle);
+}
+.section-block.hook-section .hook-label {
+  padding: 6px 16px; background: var(--accent-subtle); color: var(--accent);
+  font-size: 11px; border-bottom: 1px solid var(--accent);
+}
+
+/* ── Chapter 3 ── */
+.c3-layout .main-content {
+  flex: 1; min-width: 0;
+}
+.c3-section-header {
+  background: var(--surface2);
+}
+.c3-section-title {
+  font-size: 14px; font-weight: 600; color: var(--accent);
+}
+.c3-script-readonly {
+  background: rgba(0,0,0,0.03);
+}
+.script-readonly {
+  padding: 12px 14px; font-family: inherit; font-size: 13px;
+  line-height: 1.85; white-space: pre-wrap; color: var(--text);
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px;
+  margin: 0;
+}
+[data-theme="dark"] .c3-script-readonly { background: rgba(255,255,255,0.015); }
+.broll-block .section-broll { padding: 12px 16px; }
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 — ywriter</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn-icon" id="homeBtn" title="홈으로">&larr;</button>
+    <input type="text" id="projectName" class="project-name-input" placeholder="프로젝트 이름">
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" id="exportProjectBtn">ZIP 백업</button>
+    <button class="btn-icon" id="helpBtn" title="도움말" style="font-size:15px;">?</button>
+    <button class="theme-toggle" id="themeToggle" title="테마 전환">
+      <span id="themeIcon">&#9788;</span>
+    </button>
+  </div>
+</div>
+
+<!-- Context bar (chapter 2/3) -->
+<div id="contextBar" class="context-bar" style="display:none;"></div>
+
+<!-- Chapter tabs -->
+<div class="chapter-tabs" id="chapterTabs"></div>
+
+<!-- ─── Chapter 1: 기획 ─── -->
+<div class="chapter-panel" id="chapter1">
+  <div class="chapter-body">
+    <section class="c1-section">
+      <h2>📌 벤치마킹 썸네일 수집</h2>
+      <p class="section-desc">참고할 썸네일을 수집하세요. <kbd>Ctrl+V</kbd> 붙여넣기, 드래그, 파일 선택 모두 가능합니다.</p>
+      <div id="refGrid" class="ref-grid"></div>
+    </section>
+
+    <section class="c1-section">
+      <h2>📌 내 결정</h2>
+      <div class="c1-grid">
+        <div class="c1-field">
+          <label>영상 제목</label>
+          <input type="text" id="myVideoTitle" placeholder="최종 영상 제목을 입력하세요">
+        </div>
+        <div class="c1-field">
+          <label>썸네일 타이틀 <span class="c1-hint">(썸네일에 큰 글자로 들어갈 문구)</span></label>
+          <input type="text" id="myThumbTitle" placeholder="예: 유튜브 시작하기 완벽 가이드">
+        </div>
+      </div>
+      <div id="myThumbArea" style="margin-top:12px;"></div>
+    </section>
+
+    <section class="c1-section c1-essence">
+      <h2>📌 본질 설정 <span class="c1-hint">(영상의 뿌리)</span></h2>
+      <div class="c1-field">
+        <label>👥 누가 이 영상을 볼 것인가?</label>
+        <input type="text" id="audienceInput" placeholder="예: 유튜브 시작을 고민 중인 2030 직장인">
+      </div>
+      <div class="c1-field">
+        <label>🎯 이 영상의 목적은?</label>
+        <input type="text" id="purposeInput" placeholder="예: 유튜브 시작의 막막함을 해소하고 첫 영상을 올리게 만들기">
+      </div>
+    </section>
+  </div>
+  <div class="chapter-nav">
+    <div></div>
+    <button class="btn btn-primary" id="c1NextBtn" disabled>다음 → 원고 작성</button>
+  </div>
+</div>
+
+<!-- ─── Chapter 2: 원고 ─── -->
+<div class="chapter-panel" id="chapter2" style="display:none;">
+  <div id="hookBanner" class="hook-banner" style="display:none;">
+    <span>⚡ <strong>도입 30초가 가장 중요합니다.</strong> 시청자 이탈의 대부분이 첫 30초에 발생합니다. 훅 섹션을 신경써서 작성하세요.</span>
+    <button class="btn-icon" id="hookBannerClose" title="닫기">&times;</button>
+  </div>
+
+  <div class="c2-layout">
+    <!-- TOC -->
+    <nav class="toc-sidebar">
+      <div class="toc-header">목차</div>
+      <div id="c2TocList"></div>
+      <div class="toc-footer">
+        <span class="runtime-display">총 <span id="c2RuntimeTotal">0:00</span></span>
+      </div>
+    </nav>
+
+    <!-- Bench panel -->
+    <div class="bench-panel" id="c2BenchPanel">
+      <div id="c2BenchTabs" class="bench-tabs"></div>
+      <div id="c2BenchContent"></div>
+    </div>
+
+    <!-- My script panel -->
+    <div class="my-script-panel">
+      <div id="c2Sections" class="sections-container"></div>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn btn-secondary" id="c2PrevBtn">← 기획</button>
+    <button class="btn btn-primary" id="c2NextBtn">다음 → B-roll</button>
+  </div>
+</div>
+
+<!-- ─── Chapter 3: B-roll ─── -->
+<div class="chapter-panel" id="chapter3" style="display:none;">
+  <div class="c3-layout">
+    <nav class="toc-sidebar">
+      <div class="toc-header">목차</div>
+      <div id="c3TocList"></div>
+      <div class="toc-footer" style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn btn-secondary" id="c3ChecklistBtn" style="width:100%;">촬영 체크리스트</button>
+        <button class="btn btn-secondary" id="c3EditScriptBtn" style="width:100%;">대본 수정하기</button>
+      </div>
+    </nav>
+
+    <div class="main-content">
+      <div id="c3Sections" class="sections-container"></div>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn btn-secondary" id="c3PrevBtn">← 원고</button>
+    <button class="btn btn-primary" id="c3DoneBtn">완료</button>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="width:560px;">
+    <h3>프로젝트 가이드</h3>
+    <div class="help-content">
+      <h4>3단계 워크플로우</h4>
+      <ol>
+        <li><strong>기획</strong>: 벤치마킹 썸네일을 수집하고, 영상 제목 · 썸네일 타이틀 · 독자 · 목적을 정합니다. 이 4가지는 다음 단계에서 항상 상단에 표시됩니다.</li>
+        <li><strong>원고 작성</strong>: 벤치마킹 원고를 참고하며 내 스타일로 대본을 씁니다. 첫 H2 섹션은 "도입 30초"로 자동 강조됩니다.</li>
+        <li><strong>B-roll</strong>: 대본은 읽기 전용으로 표시되고, 각 섹션에 촬영 태그와 메모를 추가합니다.</li>
+      </ol>
+
+      <h4>단축키</h4>
+      <ul>
+        <li><kbd>Ctrl+S</kbd> 수동 저장 | <kbd>Ctrl+E</kbd> ZIP 내보내기 | <kbd>Esc</kbd> 모달 닫기</li>
+        <li><kbd>Ctrl+V</kbd> 기획 단계에서 이미지 붙여넣기</li>
+        <li><kbd>Ctrl+1/2/3</kbd> 섹션 제목에서 H1/H2/H3 변경</li>
+      </ul>
+
+      <h4>데이터 저장</h4>
+      <p>모든 변경은 자동 저장됩니다. <strong>ZIP 백업</strong> 버튼으로 프로젝트를 파일로 내보낼 수 있습니다.</p>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-secondary" id="helpCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic modal (checklist 등) -->
+<div class="modal-overlay" id="genericModal">
+  <div class="modal" style="width:480px;"></div>
+</div>
+
+<script>
+  function getTheme() { return localStorage.getItem('broll-theme') || 'dark'; }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.innerHTML = theme === 'dark' ? '&#9788;' : '&#9790;';
+    localStorage.setItem('broll-theme', theme);
+  }
+  function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+  applyTheme(getTheme());
+  document.getElementById('themeToggle').onclick = toggleTheme;
+
+  // Shared utils
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+  function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(80, ta.scrollHeight) + 'px';
+  }
+  const CHARS_PER_MIN = 280;
+  function getTextLength(md) {
+    return (md || '').replace(/[#*\-_>\[\]()`~\n\r]/g, '').replace(/\s+/g, '').length;
+  }
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return m + ':' + s.toString().padStart(2, '0');
+  }
+</script>
+<script src="js/projects-db.js"></script>
+<script src="js/zip.js"></script>
+<script src="js/project.js"></script>
+<script src="js/chapter1-brief.js"></script>
+<script src="js/chapter2-script.js"></script>
+<script src="js/chapter3-broll.js"></script>
+</body>
+</html>
