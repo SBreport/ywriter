@@ -47,14 +47,28 @@
         }
       }
 
+      const hasUrl = !!(ref.url && ref.url.trim());
+      const safeUrl = _safeUrl(ref.url);
+
       card.innerHTML = `
-        <div class="ref-image">${imgHtml}</div>
-        <input type="text" class="ref-title" placeholder="영상/채널명" value="${escapeHtml(ref.sourceTitle || '')}">
-        <textarea class="ref-memo" placeholder="배울 점 메모">${escapeHtml(ref.memo || '')}</textarea>
+        <div class="ref-image">
+          ${imgHtml}
+          ${hasUrl ? `<a class="ref-image-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="영상 보기">↗</a>` : ''}
+        </div>
+        <input type="text" class="ref-title" placeholder="영상 제목" value="${escapeHtml(ref.sourceTitle || '')}">
+        <div class="ref-url-row">
+          <span class="ref-url-icon">🔗</span>
+          <input type="url" class="ref-url" placeholder="https://youtube.com/..." value="${escapeHtml(ref.url || '')}">
+          ${hasUrl ? `<a class="ref-url-open" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="열기">↗</a>` : ''}
+        </div>
+        <textarea class="ref-memo" placeholder="배울 점 / 메모 (옵션)">${escapeHtml(ref.memo || '')}</textarea>
         <button class="ref-delete" title="삭제">&#10005;</button>
       `;
 
       card.querySelector('.ref-title').oninput = (e) => { ref.sourceTitle = e.target.value; save(); };
+      const urlInput = card.querySelector('.ref-url');
+      urlInput.oninput = (e) => { ref.url = e.target.value; save(); };
+      urlInput.onblur = () => renderRefGrid(); // re-render to show open link icon
       card.querySelector('.ref-memo').oninput = (e) => { ref.memo = e.target.value; save(); };
       card.querySelector('.ref-delete').onclick = async () => {
         if (!confirm('이 썸네일 카드를 삭제할까요?')) return;
@@ -149,6 +163,19 @@
     area.appendChild(drop);
   }
 
+  function _safeUrl(u) {
+    if (!u) return '';
+    u = String(u).trim();
+    if (!u) return '';
+    // Only allow http/https
+    if (!/^https?:\/\//i.test(u)) {
+      // If it looks like a domain, prepend https://
+      if (/^[\w-]+(\.[\w-]+)+/.test(u)) u = 'https://' + u;
+      else return '';
+    }
+    return u.replace(/"/g, '%22');
+  }
+
   async function _addFiles(files) {
     const p = project();
     const refs = p.thumbResearch.references;
@@ -156,7 +183,7 @@
       if (!f.type.startsWith('image/')) continue;
       if (refs.length >= MAX_REFS) break;
       const imageId = await ProjectsDB.saveImage(p.id, f, 'ref', f.name);
-      refs.push({ id: ProjectsDB.uuid(), imageId, sourceTitle: '', memo: '' });
+      refs.push({ id: ProjectsDB.uuid(), imageId, sourceTitle: '', url: '', memo: '' });
     }
     save(); renderRefGrid();
   }
@@ -170,19 +197,28 @@
     const items = e.clipboardData?.items;
     if (!items) return;
     const images = [];
+    let clipboardText = '';
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         const blob = item.getAsFile();
         if (blob) images.push(blob);
+      } else if (item.type === 'text/plain') {
+        clipboardText = e.clipboardData.getData('text/plain');
       }
     }
     if (images.length === 0) return;
     e.preventDefault();
     const p = project();
+    // Detect if clipboard text is a URL
+    const urlMatch = (clipboardText || '').match(/https?:\/\/\S+/);
+    const inferredUrl = urlMatch ? urlMatch[0] : '';
     for (const blob of images) {
       if (p.thumbResearch.references.length >= MAX_REFS) break;
       const imageId = await ProjectsDB.saveImage(p.id, blob, 'ref', 'pasted.png');
-      p.thumbResearch.references.push({ id: ProjectsDB.uuid(), imageId, sourceTitle: '', memo: '' });
+      p.thumbResearch.references.push({
+        id: ProjectsDB.uuid(), imageId,
+        sourceTitle: '', url: inferredUrl, memo: ''
+      });
     }
     save(); renderRefGrid();
   }
