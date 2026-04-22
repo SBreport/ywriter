@@ -24,33 +24,45 @@
 </div>
 
 <div class="wh-layout">
-  <!-- Filter bar -->
-  <div class="wh-filters">
-    <input type="text" id="whSearch" placeholder="🔍 제목/채널/메모/프로젝트 검색..." class="wh-search">
-    <select id="whFilterProject" class="wh-select" title="프로젝트 필터">
-      <option value="all">모든 프로젝트</option>
-    </select>
-    <select id="whFilterTag" class="wh-select" title="태그 필터">
-      <option value="all">모든 태그</option>
-    </select>
-    <button class="wh-fav-filter" id="whFavOnly" title="즐겨찾기만 보기">★ 즐겨찾기</button>
-    <select id="whSort" class="wh-select" title="정렬">
-      <option value="collectedDesc">수집일 최신순</option>
-      <option value="collectedAsc">수집일 오래된순</option>
-      <option value="channelAsc">채널명순</option>
-      <option value="projectAsc">프로젝트순</option>
-    </select>
-  </div>
+  <!-- Folder sidebar -->
+  <aside class="wh-sidebar" id="whSidebar">
+    <div class="wh-sidebar-header">
+      <span>폴더</span>
+      <button class="wh-folder-new" id="whNewFolderBtn" title="새 폴더">+</button>
+    </div>
+    <div id="whFolderTree" class="wh-folder-tree"></div>
+  </aside>
 
-  <!-- Grid -->
-  <div id="whGrid" class="wh-grid"></div>
+  <!-- Main content -->
+  <div class="wh-main">
+    <!-- Filter bar -->
+    <div class="wh-filters">
+      <input type="text" id="whSearch" placeholder="🔍 제목/채널/메모/프로젝트 검색..." class="wh-search">
+      <select id="whFilterProject" class="wh-select" title="프로젝트 필터">
+        <option value="all">모든 프로젝트</option>
+      </select>
+      <select id="whFilterTag" class="wh-select" title="태그 필터">
+        <option value="all">모든 태그</option>
+      </select>
+      <button class="wh-fav-filter" id="whFavOnly" title="즐겨찾기만 보기">★ 즐겨찾기</button>
+      <select id="whSort" class="wh-select" title="정렬">
+        <option value="collectedDesc">수집일 최신순</option>
+        <option value="collectedAsc">수집일 오래된순</option>
+        <option value="channelAsc">채널명순</option>
+        <option value="projectAsc">프로젝트순</option>
+      </select>
+    </div>
 
-  <div id="whEmpty" class="empty-state" style="display:none;">
-    <p>썸네일 창고가 비어있습니다.</p>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
-      프로젝트 → 챕터 1에서 벤치마킹 썸네일을 추가하면<br>
-      이곳에 자동으로 모입니다.
-    </p>
+    <!-- Grid -->
+    <div id="whGrid" class="wh-grid"></div>
+
+    <div id="whEmpty" class="empty-state" style="display:none;">
+      <p>썸네일 창고가 비어있습니다.</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+        프로젝트 → 챕터 1에서 벤치마킹 썸네일을 추가하면<br>
+        이곳에 자동으로 모입니다.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -73,6 +85,7 @@
   }
 </script>
 <script src="js/projects-db.js"></script>
+<script src="js/folders-db.js"></script>
 <script src="js/youtube-api.js"></script>
 <script src="js/warehouse.js"></script>
 </body>

@@ -9,7 +9,8 @@
       project: 'all',
       tag: 'all',
       favoriteOnly: false,
-      sort: 'collectedDesc'  // collectedDesc | collectedAsc | channelAsc | projectAsc
+      sort: 'collectedDesc',  // collectedDesc | collectedAsc | channelAsc | projectAsc
+      folderId: 'all'  // 'all' | 'unassigned' | folderId
     }
   };
   const revokeUrls = [];
@@ -28,6 +29,7 @@
         if (!Array.isArray(ref.tags)) { ref.tags = []; changed = true; }
         if (typeof ref.favorite !== 'boolean') { ref.favorite = false; changed = true; }
         if (typeof ref.warehouseMemo !== 'string') { ref.warehouseMemo = ''; changed = true; }
+        if (!('folderId' in ref)) { ref.folderId = null; changed = true; }
         state.entries.push({
           ...ref,
           projectId: p.id,
@@ -40,7 +42,14 @@
 
   function applyFilters() {
     const q = state.filter.search.toLowerCase().trim();
+    // Folder scope: 'all' = everything; 'unassigned' = folderId is null; folderId = that folder + descendants
+    let scopedIds = null;
+    if (state.filter.folderId && state.filter.folderId !== 'all' && state.filter.folderId !== 'unassigned') {
+      scopedIds = new Set(FoldersDB.getFolderAndDescendants(state.filter.folderId));
+    }
     let list = state.entries.filter(e => {
+      if (state.filter.folderId === 'unassigned' && e.folderId) return false;
+      if (scopedIds && !scopedIds.has(e.folderId)) return false;
       if (state.filter.project !== 'all' && e.projectId !== state.filter.project) return false;
       if (state.filter.tag !== 'all') {
         if (!(e.tags || []).includes(state.filter.tag)) return false;
@@ -79,6 +88,7 @@
     revokeUrls.length = 0;
 
     loadEntries();
+    _renderFolderTree();
     _renderFilters();
     _renderCount();
 
@@ -107,6 +117,130 @@
     else countEl.textContent = `${filtered}개 / 전체 ${total}개`;
   }
 
+  function _renderFolderTree() {
+    const treeEl = document.getElementById('whFolderTree');
+    if (!treeEl) return;
+
+    // Count helpers
+    const countAll = state.entries.length;
+    const countUnassigned = state.entries.filter(e => !e.folderId).length;
+    const countByFolder = {};
+    for (const e of state.entries) {
+      if (e.folderId) countByFolder[e.folderId] = (countByFolder[e.folderId] || 0) + 1;
+    }
+    // For parents, include all descendants
+    function countIncludingChildren(folderId) {
+      const ids = FoldersDB.getFolderAndDescendants(folderId);
+      let n = 0;
+      for (const id of ids) n += (countByFolder[id] || 0);
+      return n;
+    }
+
+    const tree = FoldersDB.tree();
+    const active = state.filter.folderId;
+
+    let html = '';
+    html += _folderRowHtml({ id: 'all', name: '전체', icon: '📂', count: countAll, isSystem: true }, active);
+    html += _folderRowHtml({ id: 'unassigned', name: '미분류', icon: '📥', count: countUnassigned, isSystem: true }, active);
+    html += '<div class="wh-folder-divider"></div>';
+
+    for (const parent of tree) {
+      html += _folderRowHtml({
+        id: parent.id, name: parent.name, icon: '📁', count: countIncludingChildren(parent.id),
+        hasChildren: parent.children.length > 0, depth: 0
+      }, active);
+      for (const child of parent.children) {
+        html += _folderRowHtml({
+          id: child.id, name: child.name, icon: '📄', count: countByFolder[child.id] || 0, depth: 1
+        }, active);
+      }
+    }
+
+    treeEl.innerHTML = html;
+
+    // Event wiring
+    treeEl.querySelectorAll('.wh-folder').forEach(el => {
+      const id = el.dataset.fid;
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.wh-folder-action')) return; // ignore action btn click
+        state.filter.folderId = id;
+        render();
+      });
+      // Drop target
+      el.addEventListener('dragover', (e) => {
+        if (id === 'all') return;
+        e.preventDefault();
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        const data = e.dataTransfer.getData('text/plain');
+        if (!data) return;
+        let parsed;
+        try { parsed = JSON.parse(data); } catch { return; }
+        if (parsed.type !== 'ref') return;
+        // 'all' = un-drop (not valid). 'unassigned' = set null
+        const targetFolderId = id === 'all' ? null : (id === 'unassigned' ? null : id);
+        if (id === 'all') return;
+        FoldersDB.assignRefToFolder(parsed.projectId, parsed.refId, targetFolderId);
+        render();
+      });
+    });
+
+    // Action buttons (rename/delete/add-subfolder)
+    treeEl.querySelectorAll('.wh-folder-action').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.closest('.wh-folder').dataset.fid;
+        const action = btn.dataset.act;
+        const folder = FoldersDB.get(id);
+        if (!folder) return;
+        if (action === 'rename') {
+          const name = prompt('새 폴더 이름:', folder.name);
+          if (name === null) return;
+          FoldersDB.rename(id, name);
+          render();
+        } else if (action === 'delete') {
+          const isParent = !folder.parentId;
+          const msg = isParent
+            ? `"${folder.name}" 폴더를 삭제할까요?\n(하위 폴더도 함께 삭제되며, 포함된 썸네일은 미분류로 이동합니다)`
+            : `"${folder.name}" 폴더를 삭제할까요?\n(포함된 썸네일은 미분류로 이동합니다)`;
+          if (!confirm(msg)) return;
+          FoldersDB.remove(id);
+          if (state.filter.folderId === id) state.filter.folderId = 'all';
+          render();
+        } else if (action === 'sub') {
+          const name = prompt('새 하위 폴더 이름:', '');
+          if (!name) return;
+          try {
+            FoldersDB.create(name, id);
+            render();
+          } catch (err) {
+            if (err.message === 'MAX_DEPTH') alert('하위 폴더는 2단까지만 가능합니다.');
+          }
+        }
+      };
+    });
+  }
+
+  function _folderRowHtml(f, activeId) {
+    const isActive = activeId === f.id;
+    const cls = `wh-folder ${isActive ? 'active' : ''} ${f.depth === 1 ? 'wh-folder-child' : ''}`;
+    const actions = f.isSystem ? '' : `
+      ${f.depth === 0 ? '<button class="wh-folder-action" data-act="sub" title="하위 폴더 추가">+</button>' : ''}
+      <button class="wh-folder-action" data-act="rename" title="이름 변경">✎</button>
+      <button class="wh-folder-action" data-act="delete" title="삭제">×</button>`;
+    return `
+      <div class="${cls}" data-fid="${escapeHtml(f.id)}">
+        <span class="wh-folder-icon">${f.icon}</span>
+        <span class="wh-folder-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+        <span class="wh-folder-count">${f.count}</span>
+        <span class="wh-folder-actions">${actions}</span>
+      </div>`;
+  }
+
   function _renderFilters() {
     // Projects dropdown
     const projectSel = document.getElementById('whFilterProject');
@@ -133,6 +267,15 @@
     const card = document.createElement('div');
     card.className = 'wh-card';
     card.dataset.refId = e.id;
+    card.draggable = true;
+    card.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', JSON.stringify({
+        type: 'ref', refId: e.id, projectId: e.projectId
+      }));
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
 
     // Image
     let imgHtml = '<div class="ref-placeholder">이미지 없음</div>';
@@ -174,6 +317,9 @@
 
         <textarea class="wh-memo" placeholder="창고 메모 (프로젝트와 별도)" rows="2">${escapeHtml(e.warehouseMemo || '')}</textarea>
 
+        <div class="wh-card-folder-row">
+          ${_folderBadge(e.folderId)}
+        </div>
         <div class="wh-card-footer">
           <span class="wh-collected" title="수집일">수집: ${collectedLabel || '—'}</span>
           <a class="wh-project-link" href="project.html?id=${encodeURIComponent(e.projectId)}&c=1" title="원 프로젝트로 이동">${escapeHtml(e.projectName)} →</a>
@@ -219,6 +365,16 @@
       };
     });
 
+    // Folder badge click → remove from folder (move to unassigned)
+    const folderBadgeBtn = card.querySelector('.wh-folder-badge-rm');
+    if (folderBadgeBtn) {
+      folderBadgeBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        FoldersDB.assignRefToFolder(e.projectId, e.id, null);
+        render();
+      };
+    }
+
     // Tag add
     card.querySelector('.wh-tag-add').onclick = () => {
       const area = card.querySelector('[data-tag-area]');
@@ -254,6 +410,21 @@
     return card;
   }
 
+  function _folderBadge(folderId) {
+    if (!folderId) {
+      return `<span class="wh-folder-badge unassigned" title="폴더 없음 — 좌측 폴더로 드래그하세요">📥 미분류</span>`;
+    }
+    const folder = FoldersDB.get(folderId);
+    if (!folder) return '';
+    // If child, show "parent › child"
+    let label = folder.name;
+    if (folder.parentId) {
+      const parent = FoldersDB.get(folder.parentId);
+      if (parent) label = `${parent.name} › ${folder.name}`;
+    }
+    return `<span class="wh-folder-badge" data-fid="${escapeHtml(folderId)}" title="클릭: 미분류로 이동">📁 ${escapeHtml(label)}<button class="wh-folder-badge-rm" title="미분류로 이동">×</button></span>`;
+  }
+
   function _safeUrl(u) {
     if (!u) return '';
     u = String(u).trim();
@@ -284,6 +455,16 @@
     }
     const sortSel = document.getElementById('whSort');
     if (sortSel) sortSel.onchange = (e) => { state.filter.sort = e.target.value; render(); };
+
+    const newFolderBtn = document.getElementById('whNewFolderBtn');
+    if (newFolderBtn) {
+      newFolderBtn.onclick = () => {
+        const name = prompt('새 폴더 이름:', '');
+        if (!name) return;
+        FoldersDB.create(name, null);
+        render();
+      };
+    }
 
     render();
   }
