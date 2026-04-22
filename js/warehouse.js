@@ -527,6 +527,33 @@
       };
     }
 
+    // Export / Import warehouse ZIP
+    const exportBtn = document.getElementById('whExportBtn');
+    if (exportBtn) exportBtn.onclick = async () => {
+      await ProjectZip.exportWarehouse();
+    };
+    const importBtn = document.getElementById('whImportBtn');
+    const importFile = document.getElementById('whImportFile');
+    if (importBtn && importFile) {
+      importBtn.onclick = () => importFile.click();
+      importFile.onchange = async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        try {
+          const result = await ProjectZip.importZip(file);
+          if (result?.type === 'warehouse') {
+            _toast(`창고 불러오기 완료: ${result.refCount}개 썸네일 + ${result.folderCount}개 폴더 추가`);
+          } else {
+            _toast('프로젝트 ZIP을 불러왔습니다.');
+          }
+          render();
+        } catch (e) {
+          _toast('ZIP을 읽을 수 없습니다: ' + e.message, 'error');
+        }
+        importFile.value = '';
+      };
+    }
+
     // Quick Add (warehouse-direct collection)
     const quickInput = document.getElementById('whQuickUrl');
     const quickBtn = document.getElementById('whQuickAddBtn');

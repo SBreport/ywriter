@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
 
@@ -17,6 +18,9 @@
     <span id="whCount" style="color:var(--text-muted);font-size:12px;font-weight:500;"></span>
   </div>
   <div class="header-actions">
+    <button class="btn btn-secondary" id="whExportBtn" title="창고 전체를 ZIP으로 내보내기 (폴더 + 썸네일 포함)">📤 내보내기</button>
+    <button class="btn btn-secondary" id="whImportBtn" title="다른 창고 ZIP을 여기로 불러오기 (병합)">📥 불러오기</button>
+    <input type="file" id="whImportFile" accept=".zip" style="display:none">
     <button class="theme-toggle" id="themeToggle" title="테마 전환">
       <span id="themeIcon">&#9788;</span>
     </button>
@@ -93,6 +97,7 @@
 </script>
 <script src="js/projects-db.js"></script>
 <script src="js/folders-db.js"></script>
+<script src="js/zip.js"></script>
 <script src="js/youtube-api.js"></script>
 <script src="js/warehouse.js"></script>
 </body>
