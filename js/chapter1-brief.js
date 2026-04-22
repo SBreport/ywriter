@@ -1,7 +1,7 @@
 // chapter1-brief.js — 썸네일 리서치 + 본질 설정
 
 (function() {
-  const MAX_REFS = 12;
+  const MAX_REFS = Infinity; // 제한 없음 (사용자 요청)
   const revokeUrls = []; // track blob URLs to revoke
 
   function project() { return ProjectShell.getProject(); }
@@ -37,6 +37,7 @@
     for (const ref of refs) {
       const card = document.createElement('div');
       card.className = 'ref-card';
+      card.dataset.refId = ref.id;
 
       let imgHtml = '<div class="ref-placeholder">이미지 없음</div>';
       if (ref.imageId) {
@@ -345,37 +346,59 @@
   }
   document.addEventListener('paste', handlePaste);
 
-  // ── Quick Add (YouTube URL) ──
-  async function quickAddUrl() {
-    const input = document.getElementById('refQuickUrl');
-    if (!input) return;
-    const url = input.value.trim();
-    if (!url) return;
-    const p = project();
-    if (p.thumbResearch.references.length >= MAX_REFS) {
-      alert(`썸네일은 최대 ${MAX_REFS}개까지 가능합니다.`);
-      return;
-    }
+  // ── Quick Add (YouTube URL — 단일 또는 복수) ──
+  function _splitUrls(raw) {
+    // 줄바꿈/공백/쉼표로 분리 (URL 내부의 & ? = 는 유지)
+    return raw.split(/[\s,]+/).map(u => u.trim()).filter(u => u.length > 0);
+  }
 
-    const videoId = YouTubeAPI.extractVideoId(url);
-    // Create new ref (works for both YouTube and non-YouTube URLs)
-    const ref = _makeRef({ url });
-    p.thumbResearch.references.push(ref);
-    input.value = '';
+  async function quickAddUrls(urls) {
+    if (!urls || urls.length === 0) return;
+    const p = project();
+    const newRefs = [];
+    let skipped = 0;
+    for (const url of urls) {
+      if (p.thumbResearch.references.length >= MAX_REFS) { skipped++; continue; }
+      const ref = _makeRef({ url });
+      p.thumbResearch.references.push(ref);
+      newRefs.push(ref);
+    }
     save();
     await renderRefGrid();
 
-    // If it's a YouTube URL, auto-fetch metadata
-    if (videoId) {
-      // Find the newly rendered card
-      const cards = document.querySelectorAll('.ref-card:not(.ref-add-card)');
-      const lastCard = cards[cards.length - 1];
-      if (lastCard) {
-        await _tryFetchYouTubeMeta(ref, lastCard);
+    if (skipped > 0) {
+      _showToast(`${skipped}개는 한도 초과로 추가되지 않았습니다.`, 'error');
+    }
+
+    // Fetch metadata for YouTube URLs (sequentially to avoid rate limits)
+    let youTubeCount = 0;
+    let nonYouTubeCount = 0;
+    for (const ref of newRefs) {
+      if (YouTubeAPI.extractVideoId(ref.url)) {
+        youTubeCount++;
+        const card = document.querySelector(`.ref-card[data-ref-id="${ref.id}"]`);
+        if (card) {
+          await _tryFetchYouTubeMeta(ref, card);
+        }
+      } else {
+        nonYouTubeCount++;
       }
-    } else if (url) {
+    }
+    if (newRefs.length > 1) {
+      _showToast(`${newRefs.length}개 추가됨 (YouTube ${youTubeCount} · 기타 ${nonYouTubeCount})`, 'info');
+    } else if (newRefs.length === 1 && nonYouTubeCount === 1) {
       _showToast('YouTube URL이 아니므로 이미지는 직접 추가하세요.', 'info');
     }
+  }
+
+  async function quickAddUrl() {
+    const input = document.getElementById('refQuickUrl');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+    const urls = _splitUrls(raw);
+    input.value = '';
+    await quickAddUrls(urls);
   }
 
   const quickUrlInput = document.getElementById('refQuickUrl');
@@ -383,6 +406,17 @@
   if (quickUrlInput) {
     quickUrlInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); quickAddUrl(); }
+    });
+    // 복수 URL 붙여넣기 감지: 클립보드에 여러 URL이 있으면 즉시 배치 처리
+    quickUrlInput.addEventListener('paste', (e) => {
+      const text = e.clipboardData?.getData('text') || '';
+      const urls = _splitUrls(text);
+      if (urls.length > 1) {
+        e.preventDefault();
+        quickUrlInput.value = '';
+        quickAddUrls(urls);
+      }
+      // 단일 URL이면 기본 붙여넣기 → 사용자가 Enter로 처리
     });
   }
   if (quickAddBtn) quickAddBtn.onclick = quickAddUrl;
