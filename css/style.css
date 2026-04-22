@@ -1366,3 +1366,20 @@ body {
 }
 .wh-project-link:hover { color: var(--accent); border-color: var(--accent); }
 
+/* Warehouse-only badge (ref has no linked project) */
+.wh-warehouse-only {
+  padding: 2px 8px; font-size: 10px; font-weight: 600;
+  background: var(--tag-inactive-bg); color: var(--text-muted);
+  border: 1px dashed var(--border); border-radius: 4px;
+  cursor: pointer; font-family: inherit;
+  white-space: nowrap; transition: all 0.15s;
+}
+.wh-warehouse-only:hover {
+  color: var(--text); border-color: var(--border-strong);
+}
+
+/* Warehouse quick-add bar */
+.wh-quick-add {
+  margin-bottom: 16px;
+}
+

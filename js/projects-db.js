@@ -7,6 +7,7 @@
   const DB_NAME = 'ywriter';
   const DB_VERSION = 1;
   const IMG_STORE = 'images';
+  const WAREHOUSE_PROJECT_ID = '__warehouse__';
 
   // ── IndexedDB ──
   let _dbPromise = null;
@@ -213,7 +214,41 @@
   }
 
   function list() {
+    // Hide warehouse project from regular listings
+    return getIndex().filter(p => p.id !== WAREHOUSE_PROJECT_ID);
+  }
+
+  function listWithWarehouse() {
     return getIndex();
+  }
+
+  function isWarehouseProject(id) {
+    return id === WAREHOUSE_PROJECT_ID;
+  }
+
+  function getOrCreateWarehouseProject() {
+    let p = load(WAREHOUSE_PROJECT_ID);
+    if (!p) {
+      const now = nowISO();
+      p = {
+        id: WAREHOUSE_PROJECT_ID,
+        name: '창고 (직접 수집)',
+        _isWarehouse: true,
+        createdAt: now,
+        updatedAt: now,
+        thumbResearch: {
+          references: [],
+          myThumbTitle: '', myThumbImageId: null,
+          myVideoTitle: '', audience: '', purpose: '',
+          completed: false
+        },
+        scriptWriting: { benchmarks: [], sections: [], columnRatio: 50, hookBannerDismissed: false, completed: false },
+        brollPlanning: { sectionsBroll: [], columnRatio: 60, completed: false },
+        version: 1
+      };
+      save(p);
+    }
+    return p;
   }
 
   // ── v2 → v3 migration ──
@@ -259,8 +294,10 @@
   // ── Public API ──
   window.ProjectsDB = {
     // Project CRUD
-    create, save, load, remove, duplicate, list,
+    create, save, load, remove, duplicate, list, listWithWarehouse,
     blankProject,
+    // Warehouse project
+    getOrCreateWarehouseProject, isWarehouseProject, WAREHOUSE_PROJECT_ID,
     // Images
     saveImage, loadImage, loadImageUrl, deleteImage, listImagesByProject,
     // Migration

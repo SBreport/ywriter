@@ -18,7 +18,7 @@
   // ── Aggregate + backfill missing fields ──
   function loadEntries() {
     state.entries = [];
-    const projects = ProjectsDB.list();
+    const projects = ProjectsDB.listWithWarehouse();  // include warehouse project
     for (const entry of projects) {
       const p = ProjectsDB.load(entry.id);
       if (!p) continue;
@@ -289,13 +289,16 @@
   }
 
   function _renderFilters() {
-    // Projects dropdown
+    // Projects dropdown (excludes warehouse, adds "창고 전용" option)
     const projectSel = document.getElementById('whFilterProject');
     if (projectSel) {
       const current = projectSel.value || 'all';
-      const projects = [...new Map(state.entries.map(e => [e.projectId, e.projectName])).entries()];
+      const entriesNonWh = state.entries.filter(e => !ProjectsDB.isWarehouseProject(e.projectId));
+      const projects = [...new Map(entriesNonWh.map(e => [e.projectId, e.projectName])).entries()];
+      const hasWarehouse = state.entries.some(e => ProjectsDB.isWarehouseProject(e.projectId));
       projectSel.innerHTML = '<option value="all">모든 프로젝트</option>' +
-        projects.map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join('');
+        projects.map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join('') +
+        (hasWarehouse ? `<option value="${ProjectsDB.WAREHOUSE_PROJECT_ID}">📦 창고 전용</option>` : '');
       projectSel.value = current;
     }
 
@@ -369,7 +372,9 @@
         </div>
         <div class="wh-card-footer">
           <span class="wh-collected" title="수집일">수집: ${collectedLabel || '—'}</span>
-          <a class="wh-project-link" href="project.html?id=${encodeURIComponent(e.projectId)}&c=1" title="원 프로젝트로 이동">${escapeHtml(e.projectName)} →</a>
+          ${ProjectsDB.isWarehouseProject(e.projectId)
+            ? `<button class="wh-warehouse-only" title="창고에만 보관된 정보입니다">📦 창고 전용</button>`
+            : `<a class="wh-project-link" href="project.html?id=${encodeURIComponent(e.projectId)}&c=1" title="원 프로젝트로 이동">${escapeHtml(e.projectName)} →</a>`}
         </div>
       </div>
     `;
@@ -411,6 +416,15 @@
         render();
       };
     });
+
+    // Warehouse-only badge click → info toast
+    const whOnlyBtn = card.querySelector('.wh-warehouse-only');
+    if (whOnlyBtn) {
+      whOnlyBtn.onclick = (ev) => {
+        ev.preventDefault();
+        _toast('창고에만 보관된 정보입니다. 프로젝트와 연동되지 않았습니다.');
+      };
+    }
 
     // Folder badge click → remove from folder (move to unassigned)
     const folderBadgeBtn = card.querySelector('.wh-folder-badge-rm');
@@ -513,7 +527,129 @@
       };
     }
 
+    // Quick Add (warehouse-direct collection)
+    const quickInput = document.getElementById('whQuickUrl');
+    const quickBtn = document.getElementById('whQuickAddBtn');
+    if (quickInput) {
+      quickInput.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); _quickAdd(); }
+      });
+      quickInput.addEventListener('paste', (ev) => {
+        const text = ev.clipboardData?.getData('text') || '';
+        const urls = _splitUrls(text);
+        if (urls.length > 1) {
+          ev.preventDefault();
+          quickInput.value = '';
+          _quickAddUrls(urls);
+        }
+      });
+    }
+    if (quickBtn) quickBtn.onclick = _quickAdd;
+
     render();
+  }
+
+  function _splitUrls(raw) {
+    return (raw || '').split(/[\s,]+/).map(u => u.trim()).filter(u => u.length > 0);
+  }
+
+  async function _quickAdd() {
+    const input = document.getElementById('whQuickUrl');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+    const urls = _splitUrls(raw);
+    input.value = '';
+    await _quickAddUrls(urls);
+  }
+
+  async function _quickAddUrls(urls) {
+    if (!urls || urls.length === 0) return;
+    if (!YouTubeAPI.hasApiKey()) {
+      if (!confirm('YouTube API 키가 설정되지 않았습니다.\n\n키 없이 추가하면 URL만 저장되고, 썸네일/제목 등은 자동으로 가져오지 않습니다.\n프로젝트 페이지의 ⚙ 버튼에서 API 키를 설정할 수 있습니다.\n\n그래도 진행하시겠습니까?')) return;
+    }
+
+    const wp = ProjectsDB.getOrCreateWarehouseProject();
+    const newRefs = [];
+    for (const url of urls) {
+      const ref = {
+        id: ProjectsDB.uuid(),
+        imageId: null,
+        sourceTitle: '',
+        url,
+        memo: '',
+        warehouseMemo: '',
+        tags: [],
+        favorite: false,
+        collectedAt: ProjectsDB.nowISO(),
+        folderId: state.filter.folderId && state.filter.folderId !== 'all' && state.filter.folderId !== 'unassigned' ? state.filter.folderId : null
+      };
+      wp.thumbResearch.references.push(ref);
+      newRefs.push(ref);
+    }
+    ProjectsDB.save(wp);
+    await render();
+
+    // Fetch metadata sequentially
+    let youtubeCount = 0, otherCount = 0;
+    for (const ref of newRefs) {
+      const videoId = YouTubeAPI.extractVideoId(ref.url);
+      if (!videoId) { otherCount++; continue; }
+      youtubeCount++;
+      if (!YouTubeAPI.hasApiKey()) continue;
+      // Fetch
+      const card = document.querySelector(`.wh-card[data-ref-id="${ref.id}"]`);
+      const loading = card?.querySelector('.wh-card-image');
+      if (loading) {
+        const overlay = document.createElement('div');
+        overlay.className = 'ref-loading';
+        overlay.innerHTML = '<div class="ref-loading-spinner"></div>';
+        loading.appendChild(overlay);
+      }
+      try {
+        const info = await YouTubeAPI.fetchVideoInfo(videoId);
+        ref.sourceTitle = info.title || ref.sourceTitle;
+        ref.channelName = info.channelName;
+        ref.uploadedAt = info.uploadedAt;
+        ref.uploadedAtLabel = info.uploadedAtLabel;
+        ref.duration = info.duration;
+        if (info.thumbnailUrl) {
+          try {
+            const blob = await YouTubeAPI.fetchThumbnailBlob(info.thumbnailUrl);
+            ref.imageId = await ProjectsDB.saveImage(wp.id, blob, 'ref', `yt-${videoId}.jpg`);
+          } catch {
+            ref.thumbnailUrl = info.thumbnailUrl;
+          }
+        }
+        ProjectsDB.save(wp);
+      } catch (e) {
+        let msg = e.message || 'unknown';
+        if (msg.startsWith('INVALID_KEY')) msg = 'API 키가 유효하지 않습니다.';
+        else if (msg === 'QUOTA_EXCEEDED') msg = 'API 일일 한도 초과';
+        else if (msg === 'NOT_FOUND') msg = '영상을 찾을 수 없음';
+        _toast(`메타 조회 실패: ${msg}`, 'error');
+      }
+    }
+    await render();
+    if (newRefs.length > 1) {
+      _toast(`${newRefs.length}개 추가됨 (YouTube ${youtubeCount} · 기타 ${otherCount})`);
+    }
+  }
+
+  function _toast(msg, kind) {
+    let el = document.getElementById('whToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'whToast';
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:8px;font-size:12px;font-weight:500;z-index:200;opacity:0;transition:opacity 0.25s;pointer-events:none;';
+      document.body.appendChild(el);
+    }
+    if (kind === 'error') { el.style.background = 'var(--accent)'; el.style.color = '#fff'; el.style.border = 'none'; }
+    else { el.style.background = 'var(--surface2)'; el.style.color = 'var(--text)'; el.style.border = '1px solid var(--border)'; }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 3200);
   }
 
   if (document.readyState === 'loading') {
