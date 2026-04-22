@@ -916,6 +916,29 @@ body {
 .ref-card:hover .ref-delete { opacity: 1; }
 .ref-delete:hover { background: var(--accent); }
 
+/* Ref card meta (channel · date · duration) */
+.ref-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 11px; color: var(--text-muted); line-height: 1.4;
+  padding: 0 2px;
+}
+
+/* Loading overlay */
+.ref-loading {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+}
+.ref-loading-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: yw-spin 0.8s linear infinite;
+}
+@keyframes yw-spin { to { transform: rotate(360deg); } }
+
 /* Add card — same size as ref cards */
 .ref-add-card {
   display: flex; align-items: center; justify-content: center;

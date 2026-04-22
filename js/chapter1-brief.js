@@ -45,15 +45,28 @@
           revokeUrls.push(url);
           imgHtml = `<img src="${url}" alt="ref">`;
         }
+      } else if (ref.thumbnailUrl) {
+        // Fallback: direct img URL (YouTube CDN, CORS-friendly)
+        imgHtml = `<img src="${escapeHtml(ref.thumbnailUrl)}" alt="ref" referrerpolicy="no-referrer">`;
       }
 
       const hasUrl = !!(ref.url && ref.url.trim());
       const safeUrl = _safeUrl(ref.url);
 
+      // Meta row (channel · date · duration)
+      const metaParts = [];
+      if (ref.channelName) metaParts.push(escapeHtml(ref.channelName));
+      if (ref.uploadedAtLabel) metaParts.push(escapeHtml(ref.uploadedAtLabel));
+      if (ref.duration) metaParts.push(escapeHtml(ref.duration));
+      const metaHtml = metaParts.length
+        ? `<div class="ref-meta">${metaParts.join(' · ')}</div>`
+        : '';
+
       card.innerHTML = `
         <div class="ref-image">
           ${imgHtml}
           ${hasUrl ? `<a class="ref-image-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="영상 보기">↗</a>` : ''}
+          <div class="ref-loading" style="display:none;"><div class="ref-loading-spinner"></div></div>
         </div>
         <input type="text" class="ref-title" placeholder="영상 제목" value="${escapeHtml(ref.sourceTitle || '')}">
         <div class="ref-url-row">
@@ -61,6 +74,7 @@
           <input type="url" class="ref-url" placeholder="https://youtube.com/..." value="${escapeHtml(ref.url || '')}">
           ${hasUrl ? `<a class="ref-url-open" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="열기">↗</a>` : ''}
         </div>
+        ${metaHtml}
         <textarea class="ref-memo" placeholder="배울 점 / 메모 (옵션)">${escapeHtml(ref.memo || '')}</textarea>
         <button class="ref-delete" title="삭제">&#10005;</button>
       `;
@@ -68,7 +82,17 @@
       card.querySelector('.ref-title').oninput = (e) => { ref.sourceTitle = e.target.value; save(); };
       const urlInput = card.querySelector('.ref-url');
       urlInput.oninput = (e) => { ref.url = e.target.value; save(); };
-      urlInput.onblur = () => renderRefGrid(); // re-render to show open link icon
+      urlInput.onblur = async () => {
+        await _tryFetchYouTubeMeta(ref, card);
+      };
+      urlInput.addEventListener('paste', () => {
+        // After paste completes, trigger fetch on next tick
+        setTimeout(async () => {
+          ref.url = urlInput.value;
+          save();
+          await _tryFetchYouTubeMeta(ref, card);
+        }, 50);
+      });
       card.querySelector('.ref-memo').oninput = (e) => { ref.memo = e.target.value; save(); };
       card.querySelector('.ref-delete').onclick = async () => {
         if (!confirm('이 썸네일 카드를 삭제할까요?')) return;
@@ -161,6 +185,90 @@
       }
     });
     area.appendChild(drop);
+  }
+
+  async function _tryFetchYouTubeMeta(ref, card) {
+    const url = ref.url;
+    if (!url) { renderRefGrid(); return; }
+    const videoId = YouTubeAPI.extractVideoId(url);
+    if (!videoId) { renderRefGrid(); return; }
+
+    // If no API key, just re-render (show open link icon)
+    if (!YouTubeAPI.hasApiKey()) {
+      // Prompt once per session to set API key
+      if (!window._ywApiKeyPrompted) {
+        window._ywApiKeyPrompted = true;
+        const goSetup = confirm('YouTube URL이 감지되었습니다.\n\n영상 정보를 자동으로 가져오려면 YouTube API 키가 필요합니다.\n지금 설정하시겠습니까?\n\n(아니오를 선택하면 URL만 저장됩니다.)');
+        if (goSetup) {
+          document.getElementById('apiKeyBtn')?.click();
+        }
+      }
+      renderRefGrid();
+      return;
+    }
+
+    // Skip if already fetched for this videoId
+    if (ref._fetchedVideoId === videoId) { renderRefGrid(); return; }
+
+    // Show loading overlay
+    const loadingEl = card.querySelector('.ref-loading');
+    if (loadingEl) loadingEl.style.display = 'flex';
+
+    try {
+      const info = await YouTubeAPI.fetchVideoInfo(videoId);
+      ref.sourceTitle = info.title || ref.sourceTitle;
+      ref.channelName = info.channelName;
+      ref.uploadedAt = info.uploadedAt;
+      ref.uploadedAtLabel = info.uploadedAtLabel;
+      ref.duration = info.duration;
+      ref._fetchedVideoId = videoId;
+
+      // Try to download thumbnail as Blob
+      if (info.thumbnailUrl) {
+        try {
+          const blob = await YouTubeAPI.fetchThumbnailBlob(info.thumbnailUrl);
+          // Remove old image if exists
+          if (ref.imageId) await ProjectsDB.deleteImage(ref.imageId);
+          ref.imageId = await ProjectsDB.saveImage(project().id, blob, 'ref', `yt-${videoId}.jpg`);
+        } catch (thumbErr) {
+          // CORS or fetch failure — store URL as fallback
+          ref.thumbnailUrl = info.thumbnailUrl;
+        }
+      }
+      save();
+      renderRefGrid();
+    } catch (e) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      let msg = e.message || 'unknown';
+      if (msg.startsWith('INVALID_KEY')) msg = 'API 키가 유효하지 않습니다. 설정을 확인하세요.';
+      else if (msg === 'QUOTA_EXCEEDED') msg = 'API 일일 한도 초과. 내일 다시 시도하세요.';
+      else if (msg === 'NOT_FOUND') msg = '영상을 찾을 수 없습니다.';
+      else msg = '가져오기 실패: ' + msg;
+      _showToast(msg, 'error');
+      renderRefGrid();
+    }
+  }
+
+  function _showToast(msg, kind) {
+    let el = document.getElementById('ywToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ywToast';
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:8px;font-size:12px;font-weight:500;z-index:200;opacity:0;transition:opacity 0.25s;pointer-events:none;';
+      document.body.appendChild(el);
+    }
+    if (kind === 'error') {
+      el.style.background = 'var(--accent)';
+      el.style.color = '#fff';
+    } else {
+      el.style.background = 'var(--surface2)';
+      el.style.color = 'var(--text)';
+      el.style.border = '1px solid var(--border)';
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
   }
 
   function _safeUrl(u) {

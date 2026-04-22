@@ -40,12 +40,64 @@
     document.getElementById('helpBtn').onclick = () => document.getElementById('helpModal').classList.add('show');
     document.getElementById('helpCloseBtn').onclick = () => document.getElementById('helpModal').classList.remove('show');
 
+    // API Key modal
+    const apiKeyBtn = document.getElementById('apiKeyBtn');
+    if (apiKeyBtn) apiKeyBtn.onclick = openApiKeyModal;
+
     // Global keyboard
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') document.getElementById('helpModal').classList.remove('show');
+      if (e.key === 'Escape') {
+        document.getElementById('helpModal').classList.remove('show');
+        document.getElementById('apiKeyModal')?.classList.remove('show');
+      }
       if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveProject(true); }
       if (e.ctrlKey && e.key === 'e') { e.preventDefault(); ProjectZip.exportProject(project.id); }
     });
+  }
+
+  // ── API Key modal ──
+  function openApiKeyModal() {
+    const modal = document.getElementById('apiKeyModal');
+    const input = document.getElementById('apiKeyInput');
+    const status = document.getElementById('apiKeyStatus');
+    input.value = YouTubeAPI.getApiKey();
+    status.textContent = YouTubeAPI.hasApiKey() ? '✓ 키가 설정되어 있습니다.' : '아직 키가 없습니다.';
+    status.style.color = YouTubeAPI.hasApiKey() ? 'var(--tag-stock)' : 'var(--text-muted)';
+    modal.classList.add('show');
+
+    document.getElementById('apiKeySaveBtn').onclick = () => {
+      YouTubeAPI.setApiKey(input.value);
+      status.textContent = '✓ 저장되었습니다.';
+      status.style.color = 'var(--tag-stock)';
+      setTimeout(() => modal.classList.remove('show'), 500);
+    };
+    document.getElementById('apiKeyRemoveBtn').onclick = () => {
+      if (!confirm('API 키를 삭제할까요?')) return;
+      YouTubeAPI.setApiKey('');
+      input.value = '';
+      status.textContent = '키가 삭제되었습니다.';
+      status.style.color = 'var(--text-muted)';
+    };
+    document.getElementById('apiKeyTestBtn').onclick = async () => {
+      const key = input.value.trim();
+      if (!key) { status.textContent = '키를 입력하세요.'; status.style.color = 'var(--accent)'; return; }
+      status.textContent = '테스트 중...';
+      status.style.color = 'var(--text-muted)';
+      YouTubeAPI.setApiKey(key);
+      try {
+        // Rick Astley — well-known public video for testing
+        const info = await YouTubeAPI.fetchVideoInfo('dQw4w9WgXcQ');
+        status.innerHTML = '✓ 연결 성공 — 예: <em>' + escapeHtml(info.title.slice(0, 40)) + '</em>';
+        status.style.color = 'var(--tag-stock)';
+      } catch (e) {
+        let msg = e.message || 'unknown';
+        if (msg.startsWith('INVALID_KEY')) msg = 'API 키가 유효하지 않습니다.';
+        else if (msg === 'QUOTA_EXCEEDED') msg = '일일 쿼리 한도 초과';
+        else if (msg === 'NOT_FOUND') msg = '영상을 찾을 수 없습니다.';
+        status.textContent = '✗ ' + msg;
+        status.style.color = 'var(--accent)';
+      }
+    };
   }
 
   function saveProject(showIndicator) {
