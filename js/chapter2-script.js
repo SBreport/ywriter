@@ -5,6 +5,77 @@
   let benchmarks = []; // {name, content, rendered}
   let activeBenchTab = 0;
 
+  // ── BPT 스타일 템플릿 (YouTube 시청자 이탈 데이터 기반) ──
+  const BPT_TEMPLATE = [
+    { level: 1, title: '훅 (0-10초)', bodyMd:
+`> 🎯 시청자가 "계속 봐야 할 이유"를 한 문장으로.
+> 충격적 사실 / 질문 / 역발상 / 강한 공감 중 선택.
+> 예: "90%의 유튜버가 이것 때문에 실패합니다."
+` },
+    { level: 1, title: '도입 (10초-1분)', bodyMd: '' },
+    { level: 2, title: '문제 정의', bodyMd:
+`> 💬 시청자가 공감할 문제 상황을 제시하세요.
+> "혹시 이런 경험 있으신가요?" 식으로 시청자의 맥을 짚는 문장.
+` },
+    { level: 2, title: '얻을 것 약속', bodyMd:
+`> 🎁 이 영상 끝까지 보면 구체적으로 무엇을 얻는지.
+> "오늘 이 영상 끝까지 보시면 [X], [Y], [Z]를 알게 됩니다."
+` },
+    { level: 2, title: '신뢰 구축 (선택)', bodyMd:
+`> 🎓 왜 내가 이 이야기를 할 자격이 있는지 짧게.
+> 경험, 결과, 실적 중 가장 설득력 있는 것 하나만.
+` },
+    { level: 1, title: '본론', bodyMd: '' },
+    { level: 2, title: '포인트 1 — [핵심 메시지]', bodyMd:
+`> 🔑 한 줄로 핵심 메시지를 먼저 선언.
+
+> 💡 설명: 왜 이게 중요한지.
+
+> 📌 예시/증명: 구체적 예시, 데이터, 경험담.
+` },
+    { level: 2, title: '포인트 2 — [핵심 메시지]', bodyMd:
+`> 🔑 한 줄로 핵심 메시지를 먼저 선언.
+
+> 💡 설명: 왜 이게 중요한지.
+
+> 📌 예시/증명: 구체적 예시, 데이터, 경험담.
+` },
+    { level: 2, title: '포인트 3 — [핵심 메시지]', bodyMd:
+`> 🔑 한 줄로 핵심 메시지를 먼저 선언.
+
+> 💡 설명: 왜 이게 중요한지.
+
+> 📌 예시/증명: 구체적 예시, 데이터, 경험담.
+` },
+    { level: 1, title: '아웃트로', bodyMd: '' },
+    { level: 2, title: '핵심 요약', bodyMd:
+`> 📝 본론 3-5문장으로 압축. 같은 말 반복이 아니라 재조합.
+` },
+    { level: 2, title: 'CTA (Call To Action)', bodyMd:
+`> 👍 구독·좋아요·댓글을 자연스럽게.
+> "도움이 되셨다면" 같은 전제 대신, 구체적 리턴을 약속.
+> 예: "다음 영상 알림 받고 싶으시면 구독 눌러주세요."
+` },
+    { level: 2, title: '다음 영상 예고', bodyMd:
+`> 🎬 재생 유도. "다음에는 [X]를 다뤄볼게요."
+> 시청자가 다음 영상을 기대하게 만들 한 문장.
+` }
+  ];
+
+  function _applyBpt() {
+    project().scriptWriting.sections = BPT_TEMPLATE.map(s => ({ ...s }));
+    save();
+    render();
+  }
+
+  function _applyEmpty() {
+    project().scriptWriting.sections = [
+      { level: 2, title: '새 섹션', bodyMd: '' }
+    ];
+    save();
+    render();
+  }
+
   function show() {
     // Load benchmarks from project
     benchmarks = (project().scriptWriting.benchmarks || []).map(b => ({
@@ -27,8 +98,13 @@
     const tabs = document.getElementById('c2BenchTabs');
     const content = document.getElementById('c2BenchContent');
 
+    // 접기 상태면 최소한만 표시
+    const benchPanel = document.getElementById('c2BenchPanel');
+    const collapsed = project().scriptWriting.benchCollapsed === true;
+    if (benchPanel) benchPanel.classList.toggle('bench-collapsed', collapsed);
+
     if (benchmarks.length === 0) {
-      tabs.innerHTML = '';
+      tabs.innerHTML = `<button class="bench-collapse-btn" id="c2BenchCollapse" title="${collapsed ? '벤치마킹 패널 펼치기' : '벤치마킹 패널 접기'}">${collapsed ? '⇢' : '⇠'}</button>`;
       content.innerHTML = `
         <div class="bench-upload" id="c2BenchUploadArea">
           <p>벤치마킹 원고 업로드</p>
@@ -37,13 +113,18 @@
             <button class="btn btn-secondary">파일 선택</button>
             <input type="file" accept=".txt,.md" id="c2BenchFile">
           </div>
+          <p class="bench-upload-hint">벤치마킹 없이 바로 작성하려면 우측 원고 영역을 사용하세요.</p>
         </div>`;
       document.getElementById('c2BenchFile').onchange = (e) => handleBenchFile(e.target.files[0]);
+      document.getElementById('c2BenchCollapse').onclick = () => {
+        project().scriptWriting.benchCollapsed = !collapsed;
+        save(); renderBenchPanel();
+      };
       setupBenchDrop();
       return;
     }
 
-    let tabsHtml = '';
+    let tabsHtml = `<button class="bench-collapse-btn" id="c2BenchCollapse" title="${collapsed ? '벤치마킹 패널 펼치기' : '벤치마킹 패널 접기'}">${collapsed ? '⇢' : '⇠'}</button>`;
     benchmarks.forEach((b, i) => {
       tabsHtml += `<button class="bench-tab ${i === activeBenchTab ? 'active' : ''}" data-i="${i}">${escapeHtml(b.name)}<span class="bench-tab-close" data-i="${i}">×</span></button>`;
     });
@@ -51,6 +132,11 @@
       tabsHtml += `<label class="bench-tab-add" title="추가">+<input type="file" accept=".txt,.md" style="display:none"></label>`;
     }
     tabs.innerHTML = tabsHtml;
+    const collapseBtn = document.getElementById('c2BenchCollapse');
+    if (collapseBtn) collapseBtn.onclick = () => {
+      project().scriptWriting.benchCollapsed = !collapsed;
+      save(); renderBenchPanel();
+    };
     tabs.querySelectorAll('.bench-tab').forEach(tab => {
       tab.onclick = (e) => {
         if (e.target.classList.contains('bench-tab-close')) {
@@ -146,7 +232,52 @@
 
     const secs = sections();
     if (secs.length === 0) {
-      container.appendChild(makeAddDivider(0));
+      // 빈 상태 — 3가지 시작 방법 선택 카드
+      const startPicker = document.createElement('div');
+      startPicker.className = 'start-picker';
+      startPicker.innerHTML = `
+        <h3>어떻게 시작하시겠어요?</h3>
+        <p class="start-picker-desc">원고 작성을 어떤 방식으로 시작할지 선택하세요. 이후에도 자유롭게 섹션을 추가/삭제할 수 있습니다.</p>
+        <div class="start-cards">
+          <button class="start-card recommended" data-action="bpt">
+            <div class="start-card-badge">추천</div>
+            <div class="start-card-icon">📋</div>
+            <div class="start-card-title">BPT 템플릿</div>
+            <div class="start-card-desc">
+              훅 → 도입 → 본론 → 아웃트로의 구조화된 뼈대.<br>
+              각 섹션에 작성 가이드가 들어있어 덮어쓰며 쓸 수 있음.
+            </div>
+          </button>
+          <button class="start-card" data-action="empty">
+            <div class="start-card-icon">🆕</div>
+            <div class="start-card-title">빈 원고</div>
+            <div class="start-card-desc">
+              백지 상태로 시작.<br>
+              내가 원하는 구조를 자유롭게 잡고 싶을 때.
+            </div>
+          </button>
+          <button class="start-card" data-action="bench">
+            <div class="start-card-icon">📂</div>
+            <div class="start-card-title">벤치마킹 업로드</div>
+            <div class="start-card-desc">
+              참고할 자막/대본 파일을 먼저 불러와<br>
+              옆에 띄우고 쓰기.
+            </div>
+          </button>
+        </div>
+      `;
+      startPicker.querySelector('[data-action="bpt"]').onclick = () => _applyBpt();
+      startPicker.querySelector('[data-action="empty"]').onclick = () => _applyEmpty();
+      startPicker.querySelector('[data-action="bench"]').onclick = () => {
+        // 벤치마킹 패널 확장 + 파일 선택 유도
+        const benchPanel = document.getElementById('c2BenchPanel');
+        if (benchPanel) benchPanel.classList.remove('bench-collapsed');
+        const fileInput = document.getElementById('c2BenchFile');
+        if (fileInput) fileInput.click();
+      };
+      container.appendChild(startPicker);
+      updateTOC();
+      return;
     }
 
     secs.forEach((sec, idx) => {

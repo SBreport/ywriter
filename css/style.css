@@ -1532,3 +1532,92 @@ body {
 }
 .edit-block { background: var(--surface); }
 
+/* ─────────────────────────────────────────────────
+   Chapter 2 — 원고 작성: 시작 방법 선택 카드
+   ───────────────────────────────────────────────── */
+.start-picker {
+  padding: 40px 24px;
+  max-width: 860px; margin: 0 auto;
+  text-align: center;
+}
+.start-picker h3 {
+  font-size: 18px; font-weight: 700; color: var(--text-strong);
+  margin-bottom: 6px;
+}
+.start-picker-desc {
+  font-size: 13px; color: var(--text-muted);
+  margin-bottom: 28px;
+  line-height: 1.65;
+}
+.start-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .start-cards { grid-template-columns: 1fr; }
+}
+.start-card {
+  position: relative;
+  padding: 24px 18px 22px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer; text-align: center;
+  font-family: inherit; color: inherit;
+  transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.start-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.start-card.recommended {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.start-card-badge {
+  position: absolute; top: -8px; right: 12px;
+  padding: 2px 10px;
+  background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 700; border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+.start-card-icon { font-size: 32px; line-height: 1; }
+.start-card-title {
+  font-size: 15px; font-weight: 700; color: var(--text-strong);
+}
+.start-card-desc {
+  font-size: 12px; color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* 벤치마킹 패널 접기 */
+.bench-collapse-btn {
+  width: 28px; height: 28px;
+  padding: 0; margin-right: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text-muted);
+  font-size: 12px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit;
+}
+.bench-collapse-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.bench-panel.bench-collapsed { flex: 0 0 40px; }
+.bench-panel.bench-collapsed #c2BenchContent { display: none; }
+.bench-panel.bench-collapsed .bench-tabs {
+  flex-direction: column; padding: 8px 6px;
+}
+.bench-panel.bench-collapsed .bench-tab,
+.bench-panel.bench-collapsed .bench-tab-add { display: none; }
+
+.bench-upload-hint {
+  font-size: 11px; color: var(--text-muted);
+  margin-top: 16px; padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+/* BPT 템플릿 가이드 인용문 (script textarea는 그대로, 렌더 미리보기는 X) */
+/* 사용자는 textarea 안의 > 시작 라인을 그대로 보게 됨 - 별도 스타일 없이 자연스럽게 */
+
