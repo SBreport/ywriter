@@ -276,6 +276,9 @@
     // Also move broll data
     const bs = project().brollPlanning.sectionsBroll;
     if (bs[idx] && bs[ni]) [bs[idx], bs[ni]] = [bs[ni], bs[idx]];
+    // Also move edit plan data
+    const es = project().editPlanning?.sectionsEdit;
+    if (es && es[idx] && es[ni]) [es[idx], es[ni]] = [es[ni], es[idx]];
     save(); renderSections();
   }
 
@@ -288,6 +291,27 @@
     }
     while (bp.sectionsBroll.length > sections().length) {
       bp.sectionsBroll.pop();
+    }
+    _syncEditSections();
+  }
+
+  function _syncEditSections() {
+    // Keep editPlanning.sectionsEdit in sync with sections length
+    const p = project();
+    if (!p.editPlanning) {
+      p.editPlanning = {
+        completed: false, briefExpanded: true,
+        brief: { targetDuration: '', tone: '', references: [], subtitleStyle: '', bgmMood: '', colorLook: '', transitionStyle: '', deadline: '', misc: '' },
+        sectionsEdit: []
+      };
+    }
+    const ep = p.editPlanning;
+    if (!ep.sectionsEdit) ep.sectionsEdit = [];
+    while (ep.sectionsEdit.length < sections().length) {
+      ep.sectionsEdit.push({ tags: [], customTags: [], subtitleText: '', memo: '' });
+    }
+    while (ep.sectionsEdit.length > sections().length) {
+      ep.sectionsEdit.pop();
     }
   }
 

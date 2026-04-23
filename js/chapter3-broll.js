@@ -246,9 +246,9 @@
 
   // ── Navigation ──
   document.getElementById('c3PrevBtn').onclick = () => ProjectShell.switchChapter(2);
-  document.getElementById('c3DoneBtn').onclick = () => {
+  document.getElementById('c3NextBtn').onclick = () => {
     save();
-    alert('B-roll 계획이 저장되었습니다.\n프로젝트를 ZIP으로 내보내서 백업할 수 있습니다.');
+    ProjectShell.switchChapter(4);
   };
   document.getElementById('c3EditScriptBtn').onclick = () => ProjectShell.switchChapter(2);
 

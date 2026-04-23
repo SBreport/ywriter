@@ -154,6 +154,22 @@
         columnRatio: 60,
         completed: false
       },
+      editPlanning: {
+        completed: false,
+        briefExpanded: true,
+        brief: {
+          targetDuration: '',
+          tone: '',
+          references: [],
+          subtitleStyle: '',
+          bgmMood: '',
+          colorLook: '',
+          transitionStyle: '',
+          deadline: '',
+          misc: ''
+        },
+        sectionsEdit: []
+      },
       version: 1
     };
   }
@@ -244,6 +260,11 @@
         },
         scriptWriting: { benchmarks: [], sections: [], columnRatio: 50, hookBannerDismissed: false, completed: false },
         brollPlanning: { sectionsBroll: [], columnRatio: 60, completed: false },
+        editPlanning: {
+          completed: false, briefExpanded: true,
+          brief: { targetDuration: '', tone: '', references: [], subtitleStyle: '', bgmMood: '', colorLook: '', transitionStyle: '', deadline: '', misc: '' },
+          sectionsEdit: []
+        },
         version: 1
       };
       save(p);

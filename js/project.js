@@ -21,7 +21,7 @@
 
     // Initial chapter from URL or default
     const c = parseInt(params.get('c'));
-    if (c >= 1 && c <= 3) activeChapter = c;
+    if (c >= 1 && c <= 4) activeChapter = c;
 
     document.getElementById('projectName').value = project.name || '';
     document.getElementById('projectName').oninput = (e) => {
@@ -131,6 +131,10 @@
       if (!canAccessChapter(2)) return false;
       return (project.scriptWriting?.sections?.length || 0) >= 1;
     }
+    if (n === 4) {
+      // Edit planning available once script has sections
+      return canAccessChapter(3);
+    }
     return false;
   }
 
@@ -140,14 +144,18 @@
       if (!canAccessChapter(2)) return chapterLockReason(2);
       return '2. 원고 단계에서 섹션을 최소 1개 이상 작성해주세요.';
     }
+    if (n === 4) {
+      if (!canAccessChapter(3)) return chapterLockReason(3);
+      return '';
+    }
     return '';
   }
 
   function _renderTabs() {
     const tabs = document.getElementById('chapterTabs');
-    const labels = ['1. 기획', '2. 원고', '3. B-roll'];
+    const labels = ['1. 기획', '2. 원고', '3. B-roll', '4. 편집'];
     tabs.innerHTML = '';
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 4; i++) {
       const btn = document.createElement('button');
       const locked = !canAccessChapter(i);
       const completed = _isChapterCompleted(i);
@@ -166,6 +174,7 @@
     if (n === 1) return !!project.thumbResearch?.completed;
     if (n === 2) return !!project.scriptWriting?.completed;
     if (n === 3) return !!project.brollPlanning?.completed;
+    if (n === 4) return !!project.editPlanning?.completed;
     return false;
   }
 
@@ -215,6 +224,7 @@
     if (window.Chapter1 && n === 1) Chapter1.show();
     if (window.Chapter2 && n === 2) Chapter2.show();
     if (window.Chapter3 && n === 3) Chapter3.show();
+    if (window.Chapter4 && n === 4) Chapter4.show();
   }
 
   // ── Public API for chapter modules ──
@@ -227,6 +237,7 @@
       if (n === 1 && project.thumbResearch) project.thumbResearch.completed = val;
       if (n === 2 && project.scriptWriting) project.scriptWriting.completed = val;
       if (n === 3 && project.brollPlanning) project.brollPlanning.completed = val;
+      if (n === 4 && project.editPlanning) project.editPlanning.completed = val;
       saveProject();
       _renderTabs();
     }

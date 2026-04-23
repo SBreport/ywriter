@@ -133,7 +133,79 @@
 
   <div class="chapter-nav">
     <button class="btn btn-secondary" id="c3PrevBtn">← 원고</button>
-    <button class="btn btn-primary" id="c3DoneBtn">완료</button>
+    <button class="btn btn-primary" id="c3NextBtn">다음 → 편집 계획</button>
+  </div>
+</div>
+
+<!-- ─── Chapter 4: 편집 계획 ─── -->
+<div class="chapter-panel" id="chapter4" style="display:none;">
+  <!-- 전체 편집 브리프 (접이식) -->
+  <div class="edit-brief-card" id="c4BriefCard">
+    <div class="edit-brief-header" id="c4BriefHeader">
+      <span class="edit-brief-toggle" id="c4BriefToggle">▾</span>
+      <h3>🎞 전체 편집 브리프</h3>
+      <span class="edit-brief-hint">영상 전체 톤·레퍼런스·자막·BGM 등 편집 방향 한눈에 정리</span>
+    </div>
+    <div class="edit-brief-body" id="c4BriefBody">
+      <div class="edit-brief-grid">
+        <div class="edit-brief-field">
+          <label>🎯 목표 러닝타임</label>
+          <input type="text" id="ebDuration" placeholder="예: 8분">
+        </div>
+        <div class="edit-brief-field">
+          <label>📅 편집 마감일</label>
+          <input type="date" id="ebDeadline">
+        </div>
+        <div class="edit-brief-field full">
+          <label>🎨 영상 톤/무드</label>
+          <input type="text" id="ebTone" placeholder="예: 유쾌한 vlog / 차분한 정보전달 / 에너제틱">
+        </div>
+        <div class="edit-brief-field">
+          <label>📝 자막 스타일</label>
+          <input type="text" id="ebSubtitle" placeholder="예: 흰색 기본 + 강조 노란색">
+        </div>
+        <div class="edit-brief-field">
+          <label>🎵 BGM 무드</label>
+          <input type="text" id="ebBgm" placeholder="예: 업비트 lofi / 어쿠스틱">
+        </div>
+        <div class="edit-brief-field">
+          <label>🎨 색보정/룩</label>
+          <input type="text" id="ebColor" placeholder="예: 밝고 선명 / 필름룩">
+        </div>
+        <div class="edit-brief-field">
+          <label>🎞 전환 스타일</label>
+          <input type="text" id="ebTransition" placeholder="예: 하드컷 중심 / 부드러운 크로스페이드">
+        </div>
+        <div class="edit-brief-field full">
+          <label>🔗 레퍼런스 영상 (URL + 설명)</label>
+          <div id="ebReferences" class="eb-refs"></div>
+          <button class="btn btn-secondary" id="ebAddRef" type="button">+ 레퍼런스 추가</button>
+        </div>
+        <div class="edit-brief-field full">
+          <label>📌 기타 지시사항 / 체크리스트</label>
+          <textarea id="ebMisc" rows="3" placeholder="특별 요청, 유의사항, 편집 순서 등 자유롭게"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="c4-layout">
+    <nav class="toc-sidebar">
+      <div class="toc-header">섹션별 편집 노트</div>
+      <div id="c4TocList"></div>
+      <div class="toc-footer" style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn btn-secondary" id="c4EditScriptBtn" style="width:100%;">대본 수정하기</button>
+      </div>
+    </nav>
+
+    <div class="main-content">
+      <div id="c4Sections" class="sections-container"></div>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn btn-secondary" id="c4PrevBtn">← B-roll</button>
+    <button class="btn btn-primary" id="c4DoneBtn">완료</button>
   </div>
 </div>
 
@@ -142,11 +214,12 @@
   <div class="modal" style="width:560px;">
     <h3>프로젝트 가이드</h3>
     <div class="help-content">
-      <h4>3단계 워크플로우</h4>
+      <h4>4단계 워크플로우</h4>
       <ol>
         <li><strong>기획</strong>: 벤치마킹 썸네일을 수집하고, 영상 제목 · 썸네일 타이틀 · 독자 · 목적을 정합니다. 이 4가지는 다음 단계에서 항상 상단에 표시됩니다.</li>
         <li><strong>원고 작성</strong>: 벤치마킹 원고를 참고하며 내 스타일로 대본을 씁니다. 첫 H2 섹션은 "도입 30초"로 자동 강조됩니다.</li>
         <li><strong>B-roll</strong>: 대본은 읽기 전용으로 표시되고, 각 섹션에 촬영 태그와 메모를 추가합니다.</li>
+        <li><strong>편집 계획</strong>: 촬영을 마친 뒤 편집 단계의 체크리스트입니다. 영상 전체 톤/레퍼런스/자막/BGM과 각 섹션별 페이스/강조/삭제 지시를 기록합니다.</li>
       </ol>
 
       <h4>단축키</h4>
@@ -238,5 +311,6 @@
 <script src="js/chapter1-brief.js"></script>
 <script src="js/chapter2-script.js"></script>
 <script src="js/chapter3-broll.js"></script>
+<script src="js/chapter4-edit.js"></script>
 </body>
 </html>
