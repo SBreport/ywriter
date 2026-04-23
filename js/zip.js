@@ -64,7 +64,7 @@
 
     const blob = await zip.generateAsync({ type: 'blob' });
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    _download(blob, `${date}_ywriter_all.zip`);
+    _download(blob, `${date}_youbox_all.zip`);
   }
 
   async function importZip(file) {
@@ -111,7 +111,7 @@
 
     const blob = await zip.generateAsync({ type: 'blob' });
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    _download(blob, `${date}_ywriter_warehouse.zip`);
+    _download(blob, `${date}_youbox_warehouse.zip`);
   }
 
   async function _importWarehouse(zip) {
